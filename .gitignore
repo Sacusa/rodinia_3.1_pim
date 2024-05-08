@@ -1,0 +1,6 @@
+*.o
+data
+cuda/main
+cuda/mummergpu/src/obj
+cuda/mummergpu/lib
+cuda/output
