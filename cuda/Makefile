@@ -92,14 +92,20 @@ STREAMCLUSTER_DEPS = streamcluster/streamcluster_cuda_cpu.o \
 					 streamcluster/streamcluster_cuda.o \
 					 streamcluster/streamcluster_header.o
 
+LLM_DEPS = gemm.o
+
 ALL_DEPS = $(PIM_DEPS) $(BTREE_DEPS) $(BACKPROP_DEPS) $(BFS_DEPS) $(CFD_DEPS) \
 		   $(DWT2D_DEPS) $(GAUSSIAN_DEPS) $(HEARTWALL_DEPS) $(HOTSPOT_DEPS) \
 		   $(HOTSPOT3D_DEPS) $(HUFFMAN_DEPS) $(KMEANS_DEPS) $(LAVAMD_DEPS) \
 		   $(LEUKOCYTE_DEPS) $(LUD_DEPS) $(MUMMERGPU_DEPS) $(NN_DEPS) \
-		   $(NW_DEPS) $(PATHFINDER_DEPS) $(SRAD_DEPS) $(STREAMCLUSTER_DEPS)
+		   $(NW_DEPS) $(PATHFINDER_DEPS) $(SRAD_DEPS) $(STREAMCLUSTER_DEPS) \
+		   $(LLM_DEPS)
 
 main: $(ALL_DEPS) main.cu
 	$(CC) $(CCFLAGS) $(MUMMERGPU_FLAGS) $(ALL_DEPS) main.cu -o main
+
+gemm.o: gemm.cu
+	$(CC) $(CCFLAGS) gemm.cu -c -o gemm.o
 
 clean:
 	rm main

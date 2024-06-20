@@ -68,32 +68,55 @@ int main_pathfinder(int argc, char** argv);
 int main_srad_v1(int argc, char** argv);
 int main_srad_v2(int argc, char** argv);
 int main_streamcluster(int argc, char** argv);
+void main_gemm(cudaStream_t stream, size_t M, size_t K, size_t N);
 
 // Helper functions
 void setup_mem(char*);
 void setup_pim(char *kernel);
 void run_mem(char*, int, char**, Semaphore*, bool, bool);
+void run_gemm(cudaStream_t, Semaphore*);
 void run_pim(Semaphore*, bool);
+void run_pim_llm(Semaphore*, pim_state_t*, pim_state_t*, pim_state_t*);
 void exec_mem_and_pim(char*, char*, int, char**);
 void exec_mem_only(char*, int, char**);
+void exec_llm();
+
+void print_usage(char *argv0)
+{
+    std::cout << "Usage: " << argv0 << "<pim> <mem>" << std::endl;
+    std::cout << "       " << argv0 << " llm" << std::endl;
+}
 
 int main(int argc, char **argv)
 {
-    if (argc < 3) {
-        std::cout << "Usage: " << argv[0] << "<pim> <mem>" << std::endl;
-        return -1;
+    int error_code = 0;
+
+    if (argc >= 3) {
+        char *mem_app_name = argv[2];
+        char *pim_app_name = argv[1];
+
+        if (!strcmp(pim_app_name, "nop")) {
+            exec_mem_only(mem_app_name, argc, argv);
+        } else {
+            exec_mem_and_pim(mem_app_name, pim_app_name, argc, argv);
+        }
+    }
+    else if (argc == 2) {
+        char *app_name = argv[1];
+
+        if (!strcmp(app_name, "llm")) {
+            exec_llm();
+        } else {
+            print_usage(argv[0]);
+            error_code = -2;
+        }
+    }
+    else {
+        print_usage(argv[0]);
+        error_code = -1;
     }
 
-    char *mem_app_name = argv[2];
-    char *pim_app_name = argv[1];
-
-    if (!strcmp(pim_app_name, "nop")) {
-        exec_mem_only(mem_app_name, argc, argv);
-    } else {
-        exec_mem_and_pim(mem_app_name, pim_app_name, argc, argv);
-    }
-
-    return 0;
+    return error_code;
 }
 
 void setup_mem(char *kernel)
@@ -167,7 +190,7 @@ void setup_pim(char *kernel)
     } else if (!strcmp(kernel, "histogram")) {
         pim_state = init_pim(HISTOGRAM, 1048576, 1);
     } else if (!strcmp(kernel, "fully_connected")) {
-        pim_state = init_pim(FULLY_CONNECTED, 1048576, 1);
+        pim_state = init_pim(FULLY_CONNECTED, 1048576, 256);
     } else if (!strcmp(kernel, "grim")) {
         pim_state = init_pim(GRIM, 1048576, 32);
     } else {
@@ -182,12 +205,12 @@ void run_mem(char *kernel, int argc, char **argv, Semaphore *semaphore,
     // create a copy of argv because some benchmarks destroy the arguments
     char **argv_copy = new char*[(argc - 2) + 1];
     for (int i = 2; i < argc; i++) {
-        argv_copy[i - 2] = new char[strlen(argv[i])];
+        argv_copy[i - 2] = new char[strlen(argv[i]) + 1];
         strcpy(argv_copy[i - 2], argv[i]);
     }
     argv_copy[argc - 2] = NULL;
 
-    if (wait_for_pim) { while(!pim_running.done()); }
+    if (wait_for_pim) { while (!pim_running.done()); }
 
     if (!strcmp(kernel, "nn")) {
         main_nn(argc - 2, argv_copy, is_first);
@@ -205,6 +228,14 @@ void run_mem(char *kernel, int argc, char **argv, Semaphore *semaphore,
     //    anyway
 }
 
+void run_gemm(cudaStream_t stream, Semaphore *semaphore)
+{
+    while (!pim_running.done());
+    main_gemm(stream, 128, 4096, 4096);
+    cudaStreamSynchronize(stream);
+    semaphore->notify();
+}
+
 void run_pim(Semaphore *semaphore, bool is_first)
 {
     launch_pim(pim_state, pim_stream);
@@ -217,13 +248,28 @@ void run_pim(Semaphore *semaphore, bool is_first)
     semaphore->notify();
 }
 
+void run_pim_llm(Semaphore *semaphore, pim_state_t *pim_qk,
+        pim_state_t *pim_softmax, pim_state_t *pim_sv)
+{
+    launch_pim(pim_qk,      pim_stream);
+    launch_pim(pim_softmax, pim_stream);
+    launch_pim(pim_sv,      pim_stream);
+
+    // wait for PIM to start running
+    cudaStreamGetPriority(pim_stream, NULL);
+    pim_running.notify();
+
+    cudaStreamSynchronize(pim_stream);
+    semaphore->notify();
+}
+
 void exec_mem_and_pim(char *mem_app_name, char *pim_app_name, int argc,
         char **argv)
 {
     setup_mem(mem_app_name);
     setup_pim(pim_app_name);
 
-    cudaStreamCreate(&pim_stream);
+    cudaStreamCreateWithPriority(&pim_stream, 0, -1);
 
     unsigned mem_iters = 0, pim_iters = 0;
     bool mem_running = false, pim_running = false;
@@ -300,4 +346,67 @@ void exec_mem_only(char *mem_app_name, int argc, char **argv)
 
     // Sleep for a second so that GPGPU-Sim can clean up
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+}
+
+void exec_llm()
+{
+    const int num_mem_kernels = 3;
+
+    pim_state_t *pim_qk = init_pim(FULLY_CONNECTED, 1048576, 1024);
+    pim_state_t *pim_softmax = init_pim(SOFTMAX, 1048576, 128);
+    pim_state_t *pim_sv = init_pim(FULLY_CONNECTED_128_ELEM, 1048576, 1024);
+
+    // Three mem streams, one each for generating Q, K, and V
+    cudaStream_t mem_stream[num_mem_kernels];
+    for (int i = 0; i < num_mem_kernels; i++) {
+        cudaStreamCreate(&mem_stream[i]);
+    }
+
+    // Higher priority stream for PIM
+    cudaStreamCreateWithPriority(&pim_stream, 0, -1);
+
+    Semaphore mem_semaphore[num_mem_kernels], pim_semaphore;
+
+    std::thread (run_pim_llm, &pim_semaphore, pim_qk, pim_softmax,
+            pim_sv).detach();
+
+    for (int i = 0; i < num_mem_kernels; i++) {
+        std::thread (run_gemm, mem_stream[i], &mem_semaphore[i]).detach();
+
+        // Sleep for a second to let GPGPU-Sim catch its breath!
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+
+    bool mem_running[num_mem_kernels];
+    for (int i = 0; i < num_mem_kernels; i++) { mem_running[i] = true; }
+    bool any_mem_running = true;
+    bool pim_running = true;
+
+    while (any_mem_running || pim_running) {
+        // Evaluate if at least one MEM kernel is running
+        any_mem_running = false;
+
+        for (int i = 0; i < num_mem_kernels; i++) {
+            if (mem_running[i] && mem_semaphore[i].done()) {
+                mem_running[i] = false;
+                std::cout << "<<< MEM FINISHED " << i << " >>>" << std::endl;
+            }
+            any_mem_running = any_mem_running || mem_running[i];
+        }
+
+        if (pim_running && pim_semaphore.done()) {
+            pim_running = false;
+            std::cout << "<<< PIM FINISHED >>>" << std::endl;
+        }
+    }
+
+    // Kill all running kernels
+    cudaDeviceReset();
+
+    // Sleep for a second so that GPGPU-Sim can clean up
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    free_pim(pim_qk);
+    free_pim(pim_softmax);
+    free_pim(pim_sv);
 }
