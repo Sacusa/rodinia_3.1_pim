@@ -3,4 +3,5 @@ data
 cuda/main
 cuda/mummergpu/src/obj
 cuda/mummergpu/lib
+cuda/leukocyte/meschach_lib/meschach.a
 cuda/output

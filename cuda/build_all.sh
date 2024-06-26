@@ -1,8 +1,8 @@
 #!/bin/bash
 
 declare -a mem_apps=("b+tree" "backprop" "bfs" "cfd" "dwt2d" "gaussian"
-    "heartwall" "hotspot" "hotspot3D" "kmeans" "lavaMD" "leukocyte" "lud"
-    "nn" "nw" "pathfinder" "streamcluster")
+    "heartwall" "hotspot" "hotspot3D" "huffman" "kmeans" "lavaMD" "leukocyte"
+    "lud" "mummergpu" "nn" "nw" "pathfinder" "streamcluster")
 
 for mem_app in "${mem_apps[@]}"; do
     echo $mem_app

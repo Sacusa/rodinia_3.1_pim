@@ -4,7 +4,7 @@ CC=nvcc
 CCFLAGS=-ccbin g++ -m64 -lcudart --std=c++11 -O3 -lm \
 		-gencode arch=compute_70,code=compute_70 -Xcompiler -fopenmp
 
-PIM_DIR = /u/sgupta45/PIM_apps
+PIM_DIR = /home/sgupta45/PIM/PIM_apps
 
 PIM_DEPS = $(PIM_DIR)/common.o \
 		   $(PIM_DIR)/STREAM/pim_stream.o \
