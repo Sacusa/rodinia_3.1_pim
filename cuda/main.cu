@@ -7,20 +7,43 @@
 #include "../../common.h"
 
 /**
- * std::semaphore support was added in C++20 and requires CUDA 12+. We provide
- * a comparable implementation for older versions of CUDA, such as used the one
- * we use. This requires C++11 support.
+ * std::barrier and std::semaphore support was added in C++20 and requires
+ * CUDA 12+. We provide comparable implementations for older versions of CUDA,
+ * such as used the one we use. This requires C++11 support.
  */
 
 #if __cplusplus >= 202002L
 
+#include <barrier>
 #include <semaphore>
-using Semaphore std::counting_semaphore;
+using Barrier = std::barrier;
+using Semaphore = std::counting_semaphore;
 
 #else
 
 #include <condition_variable>
 #include <mutex>
+
+class Barrier {
+    public:
+        Barrier (unsigned expected_ = 0) : expected(expected_) {}
+
+        inline void arrive_and_wait() {
+            std::unique_lock<std::mutex> lock(mtx);
+            --expected;
+            if (expected == 0) {
+                lock.unlock();
+                cv.notify_all();
+            } else {
+                cv.wait(lock, [&] { return expected == 0; });
+            }
+        }
+
+    private:
+        std::mutex mtx;
+        std::condition_variable cv;
+        unsigned expected;
+};
 
 class Semaphore {
     public:
@@ -67,7 +90,6 @@ private:
 int (*mem_app) (int, char**);
 pim_state_t *pim_state;
 cudaStream_t pim_stream;
-Semaphore thread_finished{0};
 
 // Rodinia benchmark declarations
 extern "C" int main_btree(int argc, char** argv);
@@ -96,11 +118,13 @@ void main_gemm(cudaStream_t stream, size_t M, size_t K, size_t N);
 // Helper functions
 void setup_mem(char*);
 void setup_pim(char *kernel);
-void run_mem(char*, int, char**, bool, bool, Semaphore*, Semaphore*);
-void run_gemm(cudaStream_t, bool, Semaphore*, Semaphore*);
-void run_pim(bool, Semaphore*, Semaphore*);
-void run_pim_llm(pim_state_t*, pim_state_t*, pim_state_t*, Semaphore*,
+void run_mem(char*, int, char**, bool, bool, Barrier*, Semaphore*, Semaphore*,
         Semaphore*);
+void run_gemm(cudaStream_t, bool, Barrier*, Semaphore*, Semaphore*,
+        Semaphore*);
+void run_pim(bool, Barrier*, Semaphore*, Semaphore*, Semaphore*);
+void run_pim_llm(pim_state_t*, pim_state_t*, pim_state_t*, Barrier*,
+        Semaphore*, Semaphore*, Semaphore*);
 void exec_mem_and_pim(char*, char*, int, char**);
 void exec_mem_only(char*, int, char**);
 void exec_llm(bool, bool);
@@ -228,7 +252,9 @@ void setup_pim(char *kernel)
 }
 
 void run_mem(char *kernel, int argc, char **argv, bool wait_for_pim,
-        bool is_first, Semaphore *pim_running, Semaphore *signal_mem_finished)
+        bool is_first, Barrier *all_threads_ready_barrier,
+        Semaphore *pim_running, Semaphore *thread_finished,
+        Semaphore *signal_mem_finished)
 {
     // create a copy of argv because some benchmarks destroy the arguments
     char **argv_copy = new char*[(argc - 2) + 1];
@@ -237,6 +263,8 @@ void run_mem(char *kernel, int argc, char **argv, bool wait_for_pim,
         strcpy(argv_copy[i - 2], argv[i]);
     }
     argv_copy[argc - 2] = NULL;
+
+    if (is_first) { all_threads_ready_barrier->arrive_and_wait(); }
 
     if (wait_for_pim) { pim_running->acquire(); }
 
@@ -248,7 +276,7 @@ void run_mem(char *kernel, int argc, char **argv, bool wait_for_pim,
 
     cudaStreamSynchronize(0);
     signal_mem_finished->release();
-    thread_finished.release();
+    thread_finished->release();
 
     // we don't need to destroy argv_copy because:
     // 1) if the benchmark modified the pointer, freeing it can cause a
@@ -258,8 +286,11 @@ void run_mem(char *kernel, int argc, char **argv, bool wait_for_pim,
 }
 
 void run_gemm(cudaStream_t stream, bool wait_for_pim,
-        Semaphore *pim_running, Semaphore *signal_mem_finished)
+        Barrier *all_threads_ready_barrier, Semaphore *pim_running,
+        Semaphore *thread_finished, Semaphore *signal_mem_finished)
 {
+    all_threads_ready_barrier->arrive_and_wait();
+
     if (wait_for_pim) { pim_running->acquire(); }
 
     for (int i = 0; i < LLM_NUM_MEM_KERNELS; i++) {
@@ -268,25 +299,31 @@ void run_gemm(cudaStream_t stream, bool wait_for_pim,
     }
 
     signal_mem_finished->release();
-    thread_finished.release();
+    thread_finished->release();
 }
 
-void run_pim(bool do_signal_launch, Semaphore *pim_running,
+void run_pim(bool is_first, Barrier *all_threads_ready_barrier,
+        Semaphore *pim_running, Semaphore *thread_finished,
         Semaphore *signal_pim_finished)
 {
+    if (is_first) { all_threads_ready_barrier->arrive_and_wait(); }
+
     launch_pim(pim_state, pim_stream);
 
-    if (do_signal_launch) { pim_running->release(); }
+    if (is_first) { pim_running->release(); }
 
     cudaStreamSynchronize(pim_stream);
     signal_pim_finished->release();
-    thread_finished.release();
+    thread_finished->release();
 }
 
 void run_pim_llm(pim_state_t *pim_qk, pim_state_t *pim_softmax,
-        pim_state_t *pim_sv, Semaphore *pim_running,
+        pim_state_t *pim_sv, Barrier *all_threads_ready_barrier,
+        Semaphore *pim_running, Semaphore *thread_finished,
         Semaphore *signal_pim_finished)
 {
+    all_threads_ready_barrier->arrive_and_wait();
+
     launch_pim(pim_qk,      pim_stream);
     launch_pim(pim_softmax, pim_stream);
     launch_pim(pim_sv,      pim_stream);
@@ -295,7 +332,7 @@ void run_pim_llm(pim_state_t *pim_qk, pim_state_t *pim_softmax,
 
     cudaStreamSynchronize(pim_stream);
     signal_pim_finished->release();
-    thread_finished.release();
+    thread_finished->release();
 }
 
 void exec_mem_and_pim(char *mem_app_name, char *pim_app_name, int argc,
@@ -308,14 +345,17 @@ void exec_mem_and_pim(char *mem_app_name, char *pim_app_name, int argc,
 
     unsigned mem_iters = 0, pim_iters = 0;
     bool mem_running = false, pim_running = false;
-    Semaphore pim_launched{0}, mem_finished{0}, pim_finished{0};
+    Semaphore pim_launched{0}, thread_finished{0}, mem_finished{0},
+              pim_finished{0};
+    Barrier all_threads_ready_barrier(2);
 
     while ((mem_iters < MIN_ITERS) || (pim_iters < MIN_ITERS)) {
         if (!mem_running && !pim_running) {
-            std::thread (run_pim, true, &pim_launched,
-                    &pim_finished).detach();
+            std::thread (run_pim, true, &all_threads_ready_barrier,
+                    &pim_launched, &thread_finished, &pim_finished).detach();
             std::thread (run_mem, mem_app_name, argc, argv, true, true,
-                    &pim_launched, &mem_finished).detach();
+                    &all_threads_ready_barrier, &pim_launched,
+                    &thread_finished, &mem_finished).detach();
 
             mem_running = true;
             pim_running = true;
@@ -323,13 +363,14 @@ void exec_mem_and_pim(char *mem_app_name, char *pim_app_name, int argc,
 
         else if (!mem_running) {
             std::thread (run_mem, mem_app_name, argc, argv, false, false,
-                    &pim_launched, &mem_finished).detach();
+                    &all_threads_ready_barrier, &pim_launched,
+                    &thread_finished, &mem_finished).detach();
             mem_running = true;
         }
 
         else if (!pim_running) {
-            std::thread (run_pim, false, &pim_launched,
-                    &pim_finished).detach();
+            std::thread (run_pim, false, &all_threads_ready_barrier,
+                    &pim_launched, &thread_finished, &pim_finished).detach();
             pim_running = true;
         }
 
@@ -364,11 +405,13 @@ void exec_mem_only(char *mem_app_name, int argc, char **argv)
     setup_mem(mem_app_name);
 
     unsigned mem_iters = 0;
-    Semaphore mem_finished{0};
+    Semaphore thread_finished{0}, mem_finished{0};
+    Barrier all_threads_ready_barrier(1);
 
     while (mem_iters < MIN_ITERS) {
         std::thread (run_mem, mem_app_name, argc, argv, false, mem_iters == 0,
-                nullptr, &mem_finished).detach();
+                &all_threads_ready_barrier, nullptr, &thread_finished,
+                &mem_finished).detach();
 
         thread_finished.acquire();
 
@@ -406,15 +449,19 @@ void exec_llm(bool do_run_mem, bool do_run_pim)
         cudaStreamCreate(&mem_stream);
     }
 
-    Semaphore pim_launched{0}, mem_finished{0}, pim_finished{0};
+    Semaphore pim_launched{0}, thread_finished{0}, mem_finished{0},
+              pim_finished{0};
+    Barrier all_threads_ready_barrier(((do_run_pim && do_run_mem) ? 2 : 1));
 
     if (do_run_pim) {
-        std::thread (run_pim_llm, pim_qk, pim_softmax, pim_sv, &pim_launched,
+        std::thread (run_pim_llm, pim_qk, pim_softmax, pim_sv,
+                &all_threads_ready_barrier, &pim_launched, &thread_finished,
                 &pim_finished).detach();
     }
 
     if (do_run_mem) {
-        std::thread (run_gemm, mem_stream, do_run_pim, &pim_launched,
+        std::thread (run_gemm, mem_stream, do_run_pim,
+                &all_threads_ready_barrier, &pim_launched, &thread_finished,
                 &mem_finished).detach();
     }
 
