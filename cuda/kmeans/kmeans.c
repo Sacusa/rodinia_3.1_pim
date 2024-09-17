@@ -100,7 +100,7 @@ void usage(char *argv0) {
 }
 
 /*---< main() >-------------------------------------------------------------*/
-int setup_kmeans(int argc, char **argv) {
+int setup_kmeans(int argc, char **argv, cudaStream_t stream) {
 		int		opt;
  extern char   *optarg;
 		char   *filename = 0;
@@ -245,7 +245,8 @@ int setup_kmeans(int argc, char **argv) {
 				   &cluster_centres,		/* return: [best_nclusters][nfeatures] */
 				   &rmse,					/* Root Mean Squared Error */
 					isRMSE,					/* calculate RMSE */
-					nloops);				/* number of iteration for each number of clusters */
+					nloops,  				/* number of iteration for each number of clusters */
+                    stream);
 
 	//cluster_timing = omp_get_wtime() - cluster_timing;
 

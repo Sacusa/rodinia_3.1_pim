@@ -79,7 +79,8 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
                           int     npoints,
                           int     nclusters,
                           float   threshold,
-                          int    *membership) /* out: [npoints] */
+                          int    *membership,
+                          cudaStream_t stream) /* out: [npoints] */
 {    
     int      i, j, n = 0;				/* counters */
 	int		 loop=0, temp;
@@ -153,7 +154,8 @@ float** kmeans_clustering(float **feature,    /* in: [npoints][nfeatures] */
 								   membership,		/* which cluster the point belongs to */
 								   clusters,		/* out: [nclusters][nfeatures] */
 								   new_centers_len,	/* out: number of points in each cluster */
-								   new_centers		/* sum of points in each cluster */
+								   new_centers,		/* sum of points in each cluster */
+                                   stream
 								   );
 
 		/* replace old cluster centers with new_centers */
