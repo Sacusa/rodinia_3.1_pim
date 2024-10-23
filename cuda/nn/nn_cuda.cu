@@ -65,7 +65,7 @@ __global__ void euclid(LatLong *d_locations, float *d_distances, int numRecords,
 * This program finds the k-nearest neighbors
 **/
 
-int main_nn(int argc, char* argv[], bool is_first)
+int main_nn(int argc, char* argv[], cudaStream_t stream, bool is_first)
 {
 	int    i=0;
 	float lat, lng;
@@ -95,13 +95,11 @@ int main_nn(int argc, char* argv[], bool is_first)
 	// Scaling calculations - added by Sam Kauffman
 	cudaDeviceProp deviceProp;
 	cudaGetDeviceProperties( &deviceProp, 0 );
-	cudaStreamSynchronize(0);
 	unsigned long maxGridX = deviceProp.maxGridSize[0];
 	unsigned long threadsPerBlock = min( deviceProp.maxThreadsPerBlock, DEFAULT_THREADS_PER_BLOCK );
 	size_t totalDeviceMemory;
 	size_t freeDeviceMemory;
 	cudaMemGetInfo(  &freeDeviceMemory, &totalDeviceMemory );
-	cudaStreamSynchronize(0);
 	unsigned long usableDeviceMemory = freeDeviceMemory * 85 / 100; // 85% arbitrary throttle to compensate for known CUDA bug
 	unsigned long maxThreads = usableDeviceMemory / 12; // 4 bytes in 3 vectors per thread
 	if ( numRecords > maxThreads )
@@ -142,16 +140,18 @@ int main_nn(int argc, char* argv[], bool is_first)
    /**
     * Transfer data from host to device
     */
-    cudaMemcpy( d_locations, &locations[0], sizeof(LatLong) * numRecords, cudaMemcpyHostToDevice);
+    cudaMemcpyAsync( d_locations, &locations[0], sizeof(LatLong) * numRecords, cudaMemcpyHostToDevice, stream);
+    cudaStreamSynchronize(stream);
 
     /**
     * Execute kernel
     */
-    euclid<<< gridDim, threadsPerBlock >>>(d_locations,d_distances,numRecords,lat,lng);
-    cudaStreamSynchronize(0);
+    euclid<<< gridDim, threadsPerBlock, 0, stream >>>(d_locations,d_distances,numRecords,lat,lng);
+    cudaStreamSynchronize(stream);
 
     //Copy data from device memory to host memory
-    cudaMemcpy( distances, d_distances, sizeof(float)*numRecords, cudaMemcpyDeviceToHost );
+    cudaMemcpyAsync( distances, d_distances, sizeof(float)*numRecords, cudaMemcpyDeviceToHost, stream);
+    cudaStreamSynchronize(stream);
 
 	// find the resultsCount least distances
     findLowest(records,distances,numRecords,resultsCount);

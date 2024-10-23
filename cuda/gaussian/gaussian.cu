@@ -51,7 +51,7 @@ FILE *fp_gaussian;
 
 void InitProblemOnce(char *filename);
 void InitPerRun();
-void ForwardSub();
+void ForwardSub(cudaStream_t stream);
 void BackSub();
 __global__ void Fan1(float *m, float *a, int Size, int t);
 __global__ void Fan2(float *m, float *a, float *b,int Size, int j1, int t);
@@ -92,7 +92,7 @@ create_matrix(float *m, int size){
 }
 
 
-int main_gaussian(int argc, char *argv[])
+int main_gaussian(int argc, char *argv[], cudaStream_t stream)
 {
   printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", MAXBLOCKSIZE, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
     int verbose = 1;
@@ -165,7 +165,7 @@ int main_gaussian(int argc, char *argv[])
     gettimeofday(&time_start, NULL);
 
     // run kernels
-    ForwardSub();
+    ForwardSub(stream);
 
     //end timing
     struct timeval time_end;
@@ -328,7 +328,7 @@ __global__ void Fan2(float *m_cuda, float *a_cuda, float *b_cuda,int Size, int j
  ** elimination.
  **------------------------------------------------------
  */
-void ForwardSub()
+void ForwardSub(cudaStream_t stream)
 {
 	int t;
     float *m_cuda,*a_cuda,*b_cuda;
@@ -341,9 +341,10 @@ void ForwardSub()
 	cudaMalloc((void **) &b_cuda, Size * sizeof(float));
 
 	// copy memory to GPU
-	cudaMemcpy(m_cuda, m, Size * Size * sizeof(float),cudaMemcpyHostToDevice );
-	cudaMemcpy(a_cuda, a, Size * Size * sizeof(float),cudaMemcpyHostToDevice );
-	cudaMemcpy(b_cuda, b, Size * sizeof(float),cudaMemcpyHostToDevice );
+	cudaMemcpyAsync(m_cuda, m, Size * Size * sizeof(float),cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(a_cuda, a, Size * Size * sizeof(float),cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(b_cuda, b, Size * sizeof(float),cudaMemcpyHostToDevice, stream);
+    cudaStreamSynchronize(stream);
 
 	int block_size,grid_size;
 
@@ -368,10 +369,10 @@ void ForwardSub()
     gettimeofday(&time_start, NULL);
     unsigned num_iters = std::min(Size - 1, GAUSSIAN_ITERS);
 	for (t=0; t<num_iters; t++) {
-		Fan1<<<dimGrid,dimBlock>>>(m_cuda,a_cuda,Size,t);
-		cudaStreamSynchronize(0);
-		Fan2<<<dimGridXY,dimBlockXY>>>(m_cuda,a_cuda,b_cuda,Size,Size-t,t);
-		cudaStreamSynchronize(0);
+		Fan1<<<dimGrid,dimBlock,0,stream>>>(m_cuda,a_cuda,Size,t);
+		cudaStreamSynchronize(stream);
+		Fan2<<<dimGridXY,dimBlockXY,0,stream>>>(m_cuda,a_cuda,b_cuda,Size,Size-t,t);
+		cudaStreamSynchronize(stream);
 		checkCUDAError("Fan2");
 	}
 	// end timing kernels
@@ -380,9 +381,11 @@ void ForwardSub()
     totalKernelTime = (time_end.tv_sec * 1000000 + time_end.tv_usec) - (time_start.tv_sec * 1000000 + time_start.tv_usec);
 
 	// copy memory back to CPU
-	cudaMemcpy(m, m_cuda, Size * Size * sizeof(float),cudaMemcpyDeviceToHost );
-	cudaMemcpy(a, a_cuda, Size * Size * sizeof(float),cudaMemcpyDeviceToHost );
-	cudaMemcpy(b, b_cuda, Size * sizeof(float),cudaMemcpyDeviceToHost );
+	cudaMemcpyAsync(m, m_cuda, Size * Size * sizeof(float),cudaMemcpyDeviceToHost, stream);
+	cudaMemcpyAsync(a, a_cuda, Size * Size * sizeof(float),cudaMemcpyDeviceToHost, stream);
+	cudaMemcpyAsync(b, b_cuda, Size * sizeof(float),cudaMemcpyDeviceToHost, stream);
+    cudaStreamSynchronize(stream);
+
 	cudaFree(m_cuda);
 	cudaFree(a_cuda);
 	cudaFree(b_cuda);

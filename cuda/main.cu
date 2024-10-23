@@ -117,28 +117,32 @@ cudaStream_t mem1_stream;
 pim_state_t *pim_state;
 cudaStream_t pim_stream;
 
-// Rodinia benchmark declarations
+// Rodinia benchmark declarations (default stream)
 extern "C" int main_btree(int argc, char** argv);
 int main_backprop(int argc, char** argv);
 int main_bfs(int argc, char** argv);
 int main_euler3d(int argc, char** argv);  // CFD
 int main_dwt2d(int argc, char** argv);
-int main_gaussian(int argc, char** argv);
 int main_heartwall(int argc, char** argv);
 int main_hotspot(int argc, char** argv);
 int main_hotspot3D(int argc, char** argv);
 int main_huffman(int argc, char** argv);
-int main_kmeans(int argc, char** argv, cudaStream_t stream);
 int main_lavaMD(int argc, char** argv);
 extern "C" int main_leukocyte(int argc, char** argv);
 int main_lud(int argc, char** argv);
 int main_mummergpu(int argc, char** argv);
-int main_nn(int argc, char** argv, bool is_first);
 int main_nw(int argc, char** argv);
-int main_pathfinder(int argc, char** argv);
 int main_srad_v1(int argc, char** argv);
 int main_srad_v2(int argc, char** argv);
 int main_streamcluster(int argc, char** argv);
+
+// Rodinia benchmark declarations (user defined stream)
+int main_gaussian(int argc, char** argv, cudaStream_t stream);
+int main_kmeans(int argc, char** argv, cudaStream_t stream);
+int main_nn(int argc, char** argv, cudaStream_t stream, bool is_first);
+int main_pathfinder(int argc, char** argv, cudaStream_t stream);
+
+// Other benchmark declarations
 void main_gemm(cudaStream_t stream, size_t M, size_t K, size_t N);
 
 // Helper functions
@@ -309,6 +313,8 @@ char **parse_arguments(char *args, int &argc)
     while (getline(args_tokens, token, ' ')) {
         size_t token_size = token.size();
 
+        if (token_size == 0) { continue; }
+
         char *arg = (char*) malloc(sizeof(char) * (token_size + 1));
         token.copy(arg, token_size);
         arg[token_size] = '\0';
@@ -339,7 +345,7 @@ void setup_mem(char *kernel, int index)
     } else if (!strcmp(kernel, "dwt2d")) {
         mem_app[index] = main_dwt2d;
     } else if (!strcmp(kernel, "gaussian")) {
-        mem_app[index] = main_gaussian;
+        // do nothing; gaussian needs a stream argument
     } else if (!strcmp(kernel, "heartwall")) {
         mem_app[index] = main_heartwall;
     } else if (!strcmp(kernel, "hotspot")) {
@@ -363,7 +369,7 @@ void setup_mem(char *kernel, int index)
     } else if (!strcmp(kernel, "nw")) {
         mem_app[index] = main_nw;
     } else if (!strcmp(kernel, "pathfinder")) {
-        mem_app[index] = main_pathfinder;
+        // do nothing; pathfinder needs a stream argument
     } else if (!strcmp(kernel, "srad_v1")) {
         mem_app[index] = main_srad_v1;
     } else if (!strcmp(kernel, "srad_v2")) {
@@ -439,12 +445,15 @@ void run_mem(int mem_app_index, char *kernel, int argc, char **argv,
             exit(EXIT_FAILURE);
     }
 
-    // Only kmeans uses the passed stream object for now. This can be changed
-    // but it will take time.
-    if (!strcmp(kernel, "kmeans")) {
+    // Only some applications use the passed stream object for now
+    if (!strcmp(kernel, "gaussian")) {
+        main_gaussian(argc, argv_copy, stream);
+    } else if (!strcmp(kernel, "kmeans")) {
         main_kmeans(argc, argv_copy, stream);
     } else if (!strcmp(kernel, "nn")) {
-        main_nn(argc, argv_copy, is_first);
+        main_nn(argc, argv_copy, stream, is_first);
+    } else if (!strcmp(kernel, "pathfinder")) {
+        main_pathfinder(argc, argv_copy, stream);
     } else {
         mem_app[mem_app_index](argc, argv_copy);
     }
@@ -572,8 +581,10 @@ void exec_mem_and_mem(int mem1_argc, char **mem1_argv, int mem2_argc,
 {
     char *mem1_app_name = mem1_argv[0];
     char *mem2_app_name = mem2_argv[0];
-    setup_mem(mem1_app_name, 0);
-    setup_mem(mem2_app_name, 1);
+
+    // mem1 is on stream 1, mem2 is on stream 0
+    setup_mem(mem1_app_name, 1);
+    setup_mem(mem2_app_name, 0);
 
     cudaStreamCreateWithPriority(&mem1_stream, PIM_SMS, -1);
 
@@ -585,10 +596,10 @@ void exec_mem_and_mem(int mem1_argc, char **mem1_argv, int mem2_argc,
 
     while ((mem1_iters < MIN_ITERS) || (mem2_iters < MIN_ITERS)) {
         if (!mem1_running && !mem2_running) {
-            std::thread (run_mem, 0, mem1_app_name, mem1_argc, mem1_argv, true,
+            std::thread (run_mem, 1, mem1_app_name, mem1_argc, mem1_argv, true,
                     false, true, &all_threads_ready_barrier, nullptr,
                     &mem1_launched, &thread_finished, &mem1_finished).detach();
-            std::thread (run_mem, 1, mem2_app_name, mem2_argc, mem2_argv, true,
+            std::thread (run_mem, 0, mem2_app_name, mem2_argc, mem2_argv, true,
                     true, false, &all_threads_ready_barrier, &mem1_launched,
                     nullptr, &thread_finished, &mem2_finished).detach();
 
@@ -597,14 +608,14 @@ void exec_mem_and_mem(int mem1_argc, char **mem1_argv, int mem2_argc,
         }
 
         else if (!mem1_running) {
-            std::thread (run_mem, 0, mem1_app_name, mem1_argc, mem1_argv,
+            std::thread (run_mem, 1, mem1_app_name, mem1_argc, mem1_argv,
                     false, false, false, &all_threads_ready_barrier, nullptr,
                     &mem1_launched, &thread_finished, &mem1_finished).detach();
             mem1_running = true;
         }
 
         else if (!mem2_running) {
-            std::thread (run_mem, 1, mem2_app_name, mem2_argc, mem2_argv,
+            std::thread (run_mem, 0, mem2_app_name, mem2_argc, mem2_argv,
                     false, false, false, &all_threads_ready_barrier,
                     &mem1_launched, nullptr, &thread_finished,
                     &mem2_finished).detach();
