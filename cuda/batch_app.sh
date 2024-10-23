@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p reserved --reservation=sgupta45_20240826 -t 14-00:00:00
+#SBATCH -p reserved --reservation=sgupta45_20241001 -t 14-00:00:00
 #SBATCH -c 2 --mem=16G --mail-type=fail
 SBATCH_NAME
 module load cuda/10.1
