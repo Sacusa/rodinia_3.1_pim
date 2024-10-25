@@ -76,6 +76,7 @@
 #include <limits.h>
 #include <math.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <omp.h>
 #include "kmeans.h"
 
@@ -126,6 +127,10 @@ int setup_kmeans(int argc, char **argv, cudaStream_t stream) {
 
 		int		isOutput = 0;
 		//float	cluster_timing, io_timing;
+
+        // Reset optind so that we start reading from the first argument.
+        // This is important to ensure the application runs correctly in a loop
+        optind = 1;
 
 		/* obtain command line arguments and change appropriate options */
 		while ( (opt=getopt(argc,argv,"i:t:m:n:l:bro"))!= EOF) {
