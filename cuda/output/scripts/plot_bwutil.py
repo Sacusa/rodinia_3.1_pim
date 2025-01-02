@@ -31,7 +31,7 @@ def add_single_pim_plot():
     plt.yticks(fontsize=30)
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=25)
+            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=15)
     plt.grid(axis='y', color='silver', linestyle='-', linewidth=1)
 
     # save the image
@@ -68,7 +68,7 @@ def add_all_pim_plot():
     plt.yticks(fontsize=30)
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=25)
+            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=15)
     plt.grid(axis='y', color='silver', linestyle='-', linewidth=1)
 
     # save the image
@@ -97,39 +97,26 @@ for pim in pim_kernels:
 
     base_pim_bwutil[pim] = gmean(base_pim_bwutil[pim])
 
+# Load stats_db
+stats_db = None
+
+if len(sys.argv) == 2:
+    if sys.argv[1] == "refresh":
+        stats_db = recreate_and_return_stats_db()
+    else:
+        print("Incorrect argv\n")
+        exit(-1)
+else:
+    stats_db = load_db()
+
 avg_bwutil = {p:[] for p in policies}
 
 for pim in pim_kernels:
-    if pim == 'stream_triad':
-        stream_add_index = pim_kernels.index('stream_add')
-        for policy in policies:
-            avg_bwutil[policy].append(
-                    avg_bwutil[policy][stream_add_index])
-        continue
-
     bwutil = {p:[] for p in policies}
 
     for policy in policies:
-        print(pim, policy)
-
         for app in applications:
-            bwutil[policy].append([0 for c in range(num_channels)])
-
-            channel = -1
-
-            for line in open('../' + policy + '/' + app + '_' + pim):
-                if 'Memory Partition' in line:
-                    tokens = line.split()
-                    assert(len(tokens) == 3)
-                    channel = int(tokens[2][:-1])
-                elif 'bwutil' in line:
-                    tokens = line.split()
-                    assert(len(tokens) == 3)
-                    bwutil[policy][-1][channel] = float(tokens[2])
-
-            assert(0 not in bwutil[policy][-1])
-            bwutil[policy][-1] = gmean(bwutil[policy][-1]) / \
-                    base_pim_bwutil[pim]
+            bwutil[policy].append(stats_db[policy][pim][app]["bwutil"])
 
     for policy in policies:
         avg = gmean(bwutil[policy])

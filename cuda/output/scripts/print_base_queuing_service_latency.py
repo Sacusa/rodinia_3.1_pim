@@ -1,4 +1,3 @@
-#! /u/sgupta45/conda/bin/python3
 from common import *
 
 queuing_latency = []
@@ -8,7 +7,7 @@ for app in applications:
     queuing_latency.append(-1)
     service_latency.append(-1)
 
-    for line in open('../frfcfs/' + app + '_nop'):
+    for line in open('../pim_frfcfs/single_apps/' + app + '_nop'):
         if 'avg_mrq_latency' in line:
             tokens = line.split()
             assert(len(tokens) == 3)

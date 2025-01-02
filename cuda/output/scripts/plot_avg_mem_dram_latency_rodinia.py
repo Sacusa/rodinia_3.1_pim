@@ -42,7 +42,7 @@ def gen_plot_all_pim():
 base_mem_dram_latency = {app:0 for app in applications}
 
 for app in applications:
-    for line in open('../frfcfs/' + app + '_nop'):
+    for line in open('../pim_frfcfs/single_apps/' + app + '_nop'):
         if 'avg_mrq_latency' in line:
             tokens = line.split()
             assert(len(tokens) == 3)
@@ -61,12 +61,6 @@ for app in applications:
         print(app, policy)
 
         for pim in pim_kernels:
-            if pim == 'stream_triad':
-                stream_add_index = pim_kernels.index('stream_add')
-                mem_dram_latency[policy].append(
-                        mem_dram_latency[policy][stream_add_index])
-                continue
-
             mem_dram_latency[policy].append(0)
 
             for line in open('../' + policy + '/' + app + '_' + pim):

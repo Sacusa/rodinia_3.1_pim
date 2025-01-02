@@ -3,22 +3,22 @@ from common import *
 
 colormap = matplotlib.cm.get_cmap("tab20c").colors
 wait_time_policies = [
-        'frfcfs/artificial_wait_time_0',
-        'frfcfs/artificial_wait_time_1',
-        'frfcfs/artificial_wait_time_10',
-        'frfcfs/artificial_wait_time_100'
+        'pim_frfcfs/single_apps/artificial_wait_time_0',
+        'pim_frfcfs/single_apps/artificial_wait_time_1',
+        'pim_frfcfs/single_apps/artificial_wait_time_10',
+        'pim_frfcfs/single_apps/artificial_wait_time_100'
         ]
 colors = {
-        'frfcfs/artificial_wait_time_0': 'k',
-        'frfcfs/artificial_wait_time_1': colormap[0],
-        'frfcfs/artificial_wait_time_10': colormap[1],
-        'frfcfs/artificial_wait_time_100': colormap[2]
+        'pim_frfcfs/single_apps/artificial_wait_time_0': 'k',
+        'pim_frfcfs/single_apps/artificial_wait_time_1': colormap[0],
+        'pim_frfcfs/single_apps/artificial_wait_time_10': colormap[1],
+        'pim_frfcfs/single_apps/artificial_wait_time_100': colormap[2]
         }
 labels = {
-        'frfcfs/artificial_wait_time_0': 'Base',
-        'frfcfs/artificial_wait_time_1': '1',
-        'frfcfs/artificial_wait_time_10': '10',
-        'frfcfs/artificial_wait_time_100': '100'
+        'pim_frfcfs/single_apps/artificial_wait_time_0': 'Base',
+        'pim_frfcfs/single_apps/artificial_wait_time_1': '1',
+        'pim_frfcfs/single_apps/artificial_wait_time_10': '10',
+        'pim_frfcfs/single_apps/artificial_wait_time_100': '100'
         }
 
 def gen_plot():
@@ -62,12 +62,10 @@ def gen_plot():
 speedup = {p:[] for p in wait_time_policies}
 
 for i, app in enumerate(applications):
-    print(app)
-
     for policy in wait_time_policies:
         speedup[policy].append(get_exec_time(policy, 'nop', app, True, False))
 
-    base_val = speedup['frfcfs/artificial_wait_time_0'][-1]
+    base_val = speedup['pim_frfcfs/single_apps/artificial_wait_time_0'][-1]
     for policy in wait_time_policies:
         speedup[policy][-1] = base_val / speedup[policy][-1]
 

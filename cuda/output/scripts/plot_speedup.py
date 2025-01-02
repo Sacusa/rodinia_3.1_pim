@@ -14,7 +14,7 @@ def add_plot_single_pim(pim, speedup, ylabel, filename):
 
     # add the bars
     plt.clf()
-    plt.figure(figsize=(24, 8), dpi=600)
+    plt.figure(figsize=(24, 6), dpi=600)
     plt.rc('axes', axisbelow=True)
 
     width = 0.8 / len(policies)
@@ -34,10 +34,10 @@ def add_plot_single_pim(pim, speedup, ylabel, filename):
     plt.ylabel(ylabel, fontsize=30)
     plt.yticks(fontsize=30)
     plt.ylim([0, 1])
-    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(0.1))
+    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(0.2))
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=25)
+            ncol=5, mode='expand', borderaxespad=0, fontsize=15)
     plt.grid(axis='y', color='silver', linestyle='-', linewidth=1)
 
     # save the image
@@ -55,7 +55,7 @@ def add_plot_all_pim(speedup, ylabel, filename):
 
     # add the bars
     plt.clf()
-    plt.figure(figsize=(24, 8), dpi=600)
+    plt.figure(figsize=(24, 6), dpi=600)
     plt.rc('axes', axisbelow=True)
 
     width = 0.8 / len(policies)
@@ -75,10 +75,10 @@ def add_plot_all_pim(speedup, ylabel, filename):
     plt.ylabel(ylabel, fontsize=30)
     plt.yticks(fontsize=30)
     plt.ylim([0, 1])
-    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(0.1))
+    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(0.2))
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=25)
+            ncol=len(policies), mode='expand', borderaxespad=0, fontsize=15)
     plt.grid(axis='y', color='silver', linestyle='-', linewidth=1)
 
     # save the image
@@ -122,22 +122,11 @@ for pim in pim_kernels:
     # Load execution times when run in combination
     ##############################################
 
-    if pim == 'stream_triad':
-        stream_add_index = pim_kernels.index('stream_add')
-        for policy in policies:
-            avg_mem_speedup[policy].append(
-                    avg_mem_speedup[policy][stream_add_index])
-            avg_pim_speedup[policy].append(
-                    avg_pim_speedup[policy][stream_add_index])
-        continue
-
     mem_speedup = {p:[] for p in policies}
     pim_speedup = {p:[] for p in policies}
     hmean_speedup = {p:[] for p in policies}
 
     for policy in policies:
-        print(pim, policy)
-
         for app in applications:
             mem_time, pim_time = get_exec_time(policy, pim, app, True, True)
 

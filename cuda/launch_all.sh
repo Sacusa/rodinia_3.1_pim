@@ -5,14 +5,20 @@ declare -a mem_apps=("b+tree" "backprop" "bfs" "cfd" "dwt2d" "gaussian"
     "lud" "mummergpu" "nn" "nw" "pathfinder" "srad_v1" "srad_v2"
     "streamcluster")
 
-declare -a pim_apps=("stream_add")
+declare -a pim_apps=("stream_copy")
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <policy>"
+    exit
+fi
 
 policy=$1
-max_concurrent_policies=3
-num_concurrent_policies=0
-OUTPUT_DIR=/home/sgupta45/PIM_apps/rodinia_3.1/cuda/output
 
+OUTPUT_DIR=/u/sgupta45/PIM_apps/rodinia_3.1_new/cuda/output
 mkdir -p output/${policy}
+
+max_concurrent_pim_apps=3
+num_concurrent_pim_apps=0
 
 for pim_app in "${pim_apps[@]}"; do
     for mem_app in "${mem_apps[@]}"; do
@@ -20,11 +26,11 @@ for pim_app in "${pim_apps[@]}"; do
             ${OUTPUT_DIR}/${policy}/${mem_app}_${pim_app} &
     done
 
-    ((num_concurrent_policies++))
+    ((num_concurrent_pim_apps++))
 
-    if (( num_concurrent_policies == max_concurrent_policies  )); then
+    if (( num_concurrent_pim_apps == max_concurrent_pim_apps  )); then
         wait
-        num_concurrent_policies=0
+        num_concurrent_pim_apps=0
     fi
 done
 

@@ -12,7 +12,7 @@ def add_plot_all_pim(speedup, ylabel, filename):
 
     # add the bars
     plt.clf()
-    plt.figure(figsize=(48, 8), dpi=600)
+    plt.figure(figsize=(54, 6), dpi=600)
     plt.rc('axes', axisbelow=True)
 
     width = 0.8 / len(policies)
@@ -39,22 +39,27 @@ def add_plot_all_pim(speedup, ylabel, filename):
     plt.savefig('../plots/all_' + filename + '.pdf',
             bbox_inches='tight')
 
+# Load stats_db
+stats_db = None
+
+if len(sys.argv) == 2:
+    if sys.argv[1] == "refresh":
+        stats_db = recreate_and_return_stats_db()
+    else:
+        print("Incorrect argv\n")
+        exit(-1)
+else:
+    stats_db = load_db()
+
 base_mem_time = get_base_mem_exec_time()
 
 avg_mem_speedup = {p:[] for p in policies}
 
 for app in applications:
     for policy in policies:
-        print(app, policy)
-
         mem_speedup = []
 
         for pim in pim_kernels:
-            if pim == 'stream_triad':
-                stream_add_index = pim_kernels.index('stream_add')
-                mem_speedup.append(mem_speedup[stream_add_index])
-                continue
-
             mem_time = get_exec_time(policy, pim, app, True, False)
             mem_speedup.append(base_mem_time[app] / mem_time)
 

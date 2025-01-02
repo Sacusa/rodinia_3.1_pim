@@ -81,6 +81,18 @@ def gen_plot():
 
     plt.savefig('../plots/all_radar_chart.pdf', bbox_inches='tight')
 
+# Load stats_db
+stats_db = None
+
+if len(sys.argv) == 2:
+    if sys.argv[1] == "refresh":
+        stats_db = recreate_and_return_stats_db()
+    else:
+        print("Incorrect argv\n")
+        exit(-1)
+else:
+    stats_db = load_db()
+
 base_mem_time = get_base_mem_exec_time()
 
 base_pim_time = {pim:0 for pim in pim_kernels}
@@ -119,53 +131,13 @@ for pim in pim_kernels:
     # Load execution times when run in combination
     ##############################################
 
-    if pim == 'stream_triad':
-        stream_add_index = pim_kernels.index('stream_add')
-        for policy in policies:
-            avg_weighted_speedup[policy].append(
-                    avg_weighted_speedup[policy][stream_add_index])
-            avg_fairness_index[policy].append(
-                    avg_fairness_index[policy][stream_add_index])
-            avg_bwutil[policy].append(
-                    avg_bwutil[policy][stream_add_index])
-        continue
-
     weighted_speedup = {p:[] for p in policies}
     fairness_index = {p:[] for p in policies}
     bwutil = {p:[] for p in policies}
 
     for policy in policies:
-        print(pim, policy)
-
         for app in applications:
-            bwutil[policy].append([0 for c in range(num_channels)])
-
-            channel = -1
-            cycles = -1
-            mem_found = False
-            pim_found = False
-
-            for line in open('../' + policy + '/' + app + '_' + pim):
-                if 'Memory Partition' in line:
-                    tokens = line.split()
-                    assert(len(tokens) == 3)
-                    channel = int(tokens[2][:-1])
-                elif 'bwutil' in line:
-                    tokens = line.split()
-                    assert(len(tokens) == 3)
-                    bwutil[policy][-1][channel] = float(tokens[2])
-                elif 'gpu_tot_sim_cycle' in line:
-                    tokens = line.split()
-                    assert(len(tokens) == 3)
-                    cycles = int(tokens[2])
-                elif '<<< MEM FINISHED >>>' in line:
-                    if not mem_found:
-                        mem_time = cycles
-                        mem_found = True
-                elif '<<< PIM FINISHED >>>' in line:
-                    if not pim_found:
-                        pim_time = cycles
-                        pim_found = True
+            mem_time, pim_time = get_exec_time(policy, pim, app, True, True)
 
             mem_speedup = base_mem_time[app] / mem_time
             pim_speedup = base_pim_time[pim] / pim_time
@@ -173,7 +145,7 @@ for pim in pim_kernels:
             weighted_speedup[policy].append(mem_speedup + pim_speedup)
             fairness_index[policy].append(min(mem_speedup / pim_speedup,
                         pim_speedup / mem_speedup))
-            bwutil[policy][-1] = gmean(bwutil[policy][-1])
+            bwutil[policy].append(stats_db[policy][pim][app]["bwutil"])
 
     for policy in policies:
         avg_weighted_speedup[policy].append(

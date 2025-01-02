@@ -12,7 +12,7 @@ def gen_plot_single_pim(pim):
 
     # add the bars
     plt.clf()
-    plt.figure(figsize=(32, 8), dpi=600)
+    plt.figure(figsize=(24, 8), dpi=600)
     plt.rc('axes', axisbelow=True)
 
     bottom = [0 for i in x]
@@ -31,7 +31,7 @@ def gen_plot_single_pim(pim):
     plt.ylabel('% Time Blacklisted', fontsize=30)
     plt.yticks(fontsize=30)
     plt.ylim([0, 100])
-    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(10))
+    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(20))
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
             ncol=len(policies), mode='expand', borderaxespad=0, fontsize=25)
@@ -51,7 +51,7 @@ def gen_plot_all_pim():
 
     # add the bars
     plt.clf()
-    plt.figure(figsize=(32, 8), dpi=600)
+    plt.figure(figsize=(24, 8), dpi=600)
     plt.rc('axes', axisbelow=True)
 
     bottom = [0 for i in x]
@@ -71,7 +71,7 @@ def gen_plot_all_pim():
     plt.ylabel('% Time Blacklisted', fontsize=30)
     plt.yticks(fontsize=30)
     plt.ylim([0, 100])
-    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(10))
+    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(20))
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
             ncol=len(policies), mode='expand', borderaxespad=0, fontsize=25)
@@ -90,7 +90,7 @@ def gen_plot_all_pim_average_only():
 
     # add the bars
     plt.clf()
-    plt.figure(figsize=(4, 8), dpi=600)
+    plt.figure(figsize=(2, 4), dpi=600)
     plt.rc('axes', axisbelow=True)
 
     bottom = [0]
@@ -109,10 +109,10 @@ def gen_plot_all_pim_average_only():
     plt.ylabel('% Time Blacklisted', fontsize=30)
     plt.yticks(fontsize=30)
     plt.ylim([0, 100])
-    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(10))
+    plt.gca().yaxis.set_major_locator(plt.MultipleLocator(20))
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-            ncol=2, mode='expand', borderaxespad=0, fontsize=18)
+            ncol=1, mode='expand', borderaxespad=0, fontsize=18)
     plt.grid(axis='y', color='silver', linestyle='-', linewidth=1)
 
     # save the image
@@ -125,15 +125,6 @@ avg_pim_time = []
 avg_both_time = []
 
 for pim in pim_kernels:
-    if pim == 'stream_triad':
-        stream_add_index = pim_kernels.index('stream_add')
-        avg_none_time.append(avg_none_time[stream_add_index])
-        avg_mem_time.append(avg_mem_time[stream_add_index])
-        avg_pim_time.append(avg_pim_time[stream_add_index])
-        avg_both_time.append(avg_both_time[stream_add_index])
-
-        continue
-
     none_time = []
     mem_time = []
     pim_time = []
@@ -150,8 +141,8 @@ for pim in pim_kernels:
 
         channel = -1
 
-        for line in open('../bliss/interval_10000_threshold_4/' + app + '_' + \
-                pim):
+        for line in open('../bliss_vc_2/interval_10000_threshold_4/' + app + \
+                '_' + pim):
             if 'Memory Partition' in line:
                 tokens = line.split()
                 assert(len(tokens) == 3)
