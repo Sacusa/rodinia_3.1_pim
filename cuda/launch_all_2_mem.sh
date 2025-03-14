@@ -1,15 +1,20 @@
 #!/bin/bash
 source common.sh
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <policy>"
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <policy> [policy parameters]"
     exit
 fi
 
 declare -a mem1_apps=("gaussian" "nn" "pathfinder")
 
-policy=$1
-output_dir=output/${policy}
+policy_out_dir=$(set_policy_in_config "$@")
+
+if [[ $? -ne 0 ]]; then
+    exit
+fi
+
+output_dir=output/${policy_out_dir}
 mkdir -p ${output_dir}
 
 max_concurrent_apps=$((`nproc` / 2))

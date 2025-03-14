@@ -95,9 +95,103 @@ get_mem_args () {
         ARGS="${MEM_APP} 10 20 256 65536 65536 1000 none /dev/null 1"  # ANL
         #ARGS="${MEM_APP} 2 3 256 1165536 1165536 1000 none /dev/null 1"  # CGO
     else
-        echo "Invalid MEM app: ${MEM_APP}"
-        exit -1
+        echo "Invalid MEM app: ${MEM_APP}" >&2
+        exit 1
     fi
 
     echo "${ARGS}"
+}
+
+set_policy_in_config () {
+    policy=$1
+
+    if [ "${policy}" == "bliss" ]; then
+        if [ "$#" -ne 3 ]; then
+            echo "ERROR: Policy ${policy} requires two additional arguments:" >&2
+            echo "  Clearing interval" >&2
+            echo "  Blacklisting threshold" >&2
+            exit 1
+        fi
+
+        clearing_interval=$2
+        blacklisting_threshold=$3
+
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 0' gpgpusim.config
+        sed -i '/bliss_clearing_interval/c\-bliss_clearing_interval '"${clearing_interval}" gpgpusim.config
+        sed -i '/bliss_blacklisting_threshold/c\-bliss_blacklisting_threshold '"${blacklisting_threshold}" gpgpusim.config
+
+        echo "bliss_interval_${clearing_interval}_threshold_${blacklisting_threshold}"
+
+    elif [ "${policy}" == "fifo" ]; then
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 1' gpgpusim.config
+
+        echo "fifo"
+
+    elif [ "${policy}" == "frfcfs" ]; then
+        if [ "$#" -ne 2 ]; then
+            echo "ERROR: Policy ${policy} requires one additional argument:" >&2
+            echo "  Cap" >&2
+            exit 1
+        fi
+
+        cap=$2
+
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 2' gpgpusim.config
+        sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" gpgpusim.config
+
+        echo "frfcfs_cap_${cap}"
+
+    elif [ "${policy}" == "fr_rr_fcfs" ]; then
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 3' gpgpusim.config
+
+        echo "fr_rr_fcfs"
+
+    elif [ "${policy}" == "gi" ]; then
+        if [ "$#" -ne 4 ]; then
+            echo "ERROR: Policy ${policy} requires three additional arguments:" >&2
+            echo "  PIM queue size" >&2
+            echo "  High watermark" >&2
+            echo "  Low watermark" >&2
+            exit 1
+        fi
+
+        queue_size_string="${2}:${3}:${4}"
+
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 4' gpgpusim.config
+        sed -i '/dram_pim_queue_size/c\-dram_pim_queue_size '"${queue_size_string}" gpgpusim.config
+
+        echo "gi_${2}_${3}_${4}"
+
+    elif [ "${policy}" == "mem_first" ]; then
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 5' gpgpusim.config
+
+        echo "mem_first"
+
+    elif [ "${policy}" == "pim_first" ]; then
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 6' gpgpusim.config
+
+        echo "pim_first"
+
+    elif [ "${policy}" == "f3fs" ]; then
+        if [ "$#" -ne 3 ]; then
+            echo "ERROR: Policy ${policy} requires two additional arguments:" >&2
+            echo "  Cap" >&2
+            echo "  Maximum PIM slowdown" >&2
+            exit 1
+        fi
+
+        cap=$2
+        max_pim_slowdown=$3
+
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 7' gpgpusim.config
+        sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" gpgpusim.config
+        sed -i '/dram_max_pim_slowdown/c\-dram_max_pim_slowdown '"${max_pim_slowdown}" gpgpusim.config
+
+        echo "f3fs_cap_${cap}_slowdown_${max_pim_slowdown}"
+
+    else
+        echo "Invalid policy ${policy}" >&2
+        exit 1
+
+    fi
 }
