@@ -6,5 +6,6 @@ cuda/mummergpu/lib
 cuda/leukocyte/meschach_lib/meschach.a
 
 cuda/output/**
+cuda/output/scripts/__pycache__
 !cuda/output/scripts/
 !cuda/output/scripts/**

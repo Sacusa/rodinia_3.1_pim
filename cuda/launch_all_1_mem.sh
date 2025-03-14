@@ -1,19 +1,27 @@
 #!/bin/bash
+source common.sh
 
-declare -a mem_apps=("b+tree" "backprop" "bfs" "cfd" "dwt2d" "gaussian"
-    "heartwall" "hotspot" "hotspot3D" "huffman" "kmeans" "lavaMD"
-    "lud" "mummergpu" "nn" "nw" "pathfinder" "srad_v1" "srad_v2"
-    "streamcluster")
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <policy>"
+    exit
+fi
 
 policy=$1
-OUTPUT_DIR=/u/sgupta45/PIM_apps/rodinia_3.1_new/cuda/output
+output_dir=output/${policy}
+mkdir -p ${output_dir}
 
-mkdir -p output/${policy}
+max_concurrent_apps=$((`nproc`))
+num_concurrent_apps=0
 
 for mem_app in "${mem_apps[@]}"; do
-    #./launch_1_mem.sh ${mem_app} &> ${OUTPUT_DIR}/${policy}/${mem_app}_nop &
-    ./launch_1_mem.sh ${mem_app} &> \
-        ${OUTPUT_DIR}/${policy}/${mem_app}_nop_max_cores_72 &
+    ./launch_1_mem.sh ${mem_app} &> ${output_dir}/${mem_app}_nop &
+
+    ((num_concurrent_apps++))
+
+    if (( num_concurrent_apps == max_concurrent_apps )); then
+        num_concurrent_apps=0
+        wait
+    fi
 done
 
 wait

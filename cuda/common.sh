@@ -1,7 +1,17 @@
 #!/bin/bash
 
+# We use the following two papers as reference for input sizes
+# ANL paper: Jin, "The Rodinia Benchmark Suite in SYCL"
+# CGO paper: Ivanov et al., "Retargeting and Respecializing GPU Workloads for
+#            Performance Portability," CGO 2024
+
 ROOT_DIR=/u/sgupta45/PIM_apps/rodinia_3.1_new/cuda
 DATA_DIR=/u/sgupta45/rodinia_3.1/data
+
+declare -a mem_apps=("b+tree" "backprop" "bfs" "cfd" "dwt2d" "gaussian"
+    "heartwall" "hotspot" "hotspot3D" "huffman" "kmeans" "lavaMD"
+    "lud" "mummergpu" "nn" "nw" "pathfinder" "srad_v1" "srad_v2"
+    "streamcluster")
 
 get_mem_args () {
     MEM_APP=$1
