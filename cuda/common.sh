@@ -146,32 +146,6 @@ set_policy_in_config () {
 
         echo "fr_rr_fcfs"
 
-    elif [ "${policy}" == "gi" ]; then
-        if [ "$#" -ne 4 ]; then
-            echo "ERROR: Policy ${policy} requires three additional arguments:" >&2
-            echo "  PIM queue size" >&2
-            echo "  High watermark" >&2
-            echo "  Low watermark" >&2
-            exit 1
-        fi
-
-        queue_size_string="${2}:${3}:${4}"
-
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 4' gpgpusim.config
-        sed -i '/dram_pim_queue_size/c\-dram_pim_queue_size '"${queue_size_string}" gpgpusim.config
-
-        echo "gi_${2}_${3}_${4}"
-
-    elif [ "${policy}" == "mem_first" ]; then
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 5' gpgpusim.config
-
-        echo "mem_first"
-
-    elif [ "${policy}" == "pim_first" ]; then
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 6' gpgpusim.config
-
-        echo "pim_first"
-
     elif [ "${policy}" == "f3fs" ]; then
         if [ "$#" -ne 3 ]; then
             echo "ERROR: Policy ${policy} requires two additional arguments:" >&2
@@ -183,11 +157,37 @@ set_policy_in_config () {
         cap=$2
         max_pim_slowdown=$3
 
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 7' gpgpusim.config
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 4' gpgpusim.config
         sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" gpgpusim.config
         sed -i '/dram_max_pim_slowdown/c\-dram_max_pim_slowdown '"${max_pim_slowdown}" gpgpusim.config
 
         echo "f3fs_cap_${cap}_slowdown_${max_pim_slowdown}"
+
+    elif [ "${policy}" == "gi" ]; then
+        if [ "$#" -ne 4 ]; then
+            echo "ERROR: Policy ${policy} requires three additional arguments:" >&2
+            echo "  PIM queue size" >&2
+            echo "  High watermark" >&2
+            echo "  Low watermark" >&2
+            exit 1
+        fi
+
+        queue_size_string="${2}:${3}:${4}"
+
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 5' gpgpusim.config
+        sed -i '/dram_pim_queue_size/c\-dram_pim_queue_size '"${queue_size_string}" gpgpusim.config
+
+        echo "gi_${2}_${3}_${4}"
+
+    elif [ "${policy}" == "mem_first" ]; then
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 6' gpgpusim.config
+
+        echo "mem_first"
+
+    elif [ "${policy}" == "pim_first" ]; then
+        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 7' gpgpusim.config
+
+        echo "pim_first"
 
     else
         echo "Invalid policy ${policy}" >&2
