@@ -5,9 +5,9 @@ CC = g++
 
 CUDA_INCLUDEPATH=$(CUDA_DIR)/include
 
-NVCC_OPTS=-O3 -arch=sm_70 --cudart shared -Xcompiler -m64
+NVCC_OPTS=-O3 -arch=sm_70 --cudart shared -Xcompiler -m64 -w
 
-GCC_OPTS=-O3 -Wall -Wextra -m64
+GCC_OPTS=-O3 -m64 -w
 
 OBJ = main_test_cu.o stats_logger.o vlc_kernel_sm64huff.o scan.o pack_kernels.o cpuencode.o
 SRC = main_test_cu.cu

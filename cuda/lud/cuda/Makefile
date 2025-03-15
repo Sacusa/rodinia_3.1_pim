@@ -2,8 +2,7 @@ CC = gcc
 NVCC = nvcc
 
 DEFS += \
-		-DGPU_TIMER \
-		$(SPACE)
+		-DGPU_TIMER
 
 NVCCFLAGS += -I../common \
 			 -O3 \
@@ -11,13 +10,7 @@ NVCCFLAGS += -I../common \
 			 -arch=sm_70 \
 			 -lm \
 			 --cudart shared \
-			 $(SPACE)
-
-CFLAGS += -I../common \
-					-I/usr/include/cuda \
-		  -O3 \
-		  -Wall \
-		  $(SPACE)
+			 -w
 
 # Add source files here
 EXECUTABLE  := lud_cuda

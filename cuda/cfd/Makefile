@@ -10,7 +10,7 @@ ifeq ($(shell uname -m), x86_64)
      endif
 endif
 
-NVCC_FLAGS=--gpu-architecture=compute_70 --gpu-code=compute_70 -I$(CUDA_SDK_PATH)/common/inc -L$(CUDA_SDK_PATH)/common/lib $(CUTIL_LIB) --cudart shared -c
+NVCC_FLAGS=--gpu-architecture=compute_70 --gpu-code=compute_70 -I$(CUDA_SDK_PATH)/common/inc -L$(CUDA_SDK_PATH)/common/lib $(CUTIL_LIB) --cudart shared -c -w
 
 all: euler3d.o euler3d_double.o pre_euler3d.o pre_euler3d_double.o
 

@@ -6,11 +6,11 @@ endif
 
 # C compiler
 CC = nvcc -ccbin gcc
-CC_FLAGS = -O3 -I$(MATRIX_DIR) -I$(CUDA_DIR)/include -lstdc++
+CC_FLAGS = -O3 -I$(MATRIX_DIR) -I$(CUDA_DIR)/include -lstdc++ -w
 
 # CUDA compiler
 NVCC = $(CUDA_DIR)/bin/nvcc
-NVCC_FLAGS = -I$(CUDA_DIR)/include -I$(SDK_DIR)/common/inc -arch=sm_70 --cudart shared
+NVCC_FLAGS = -I$(CUDA_DIR)/include -I$(SDK_DIR)/common/inc -arch=sm_70 --cudart shared -w
 
 # Matrix library path
 MATRIX_DIR = ../meschach_lib
@@ -46,7 +46,7 @@ find_ellipse.o: avilib.h
 track_ellipse.o: find_ellipse.h avilib.h
 
 $(MATRIX_DIR)/meschach.a:
-	cd $(MATRIX_DIR); ./configure --with-all; make all; make clean
+	cd $(MATRIX_DIR); ./configure --with-all &> /dev/null; make all; make clean
 
 clean:
 	rm -f *.o *~ leukocyte *.linkinfo

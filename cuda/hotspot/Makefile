@@ -2,7 +2,7 @@ include ../../common/make.config
 
 CC := $(CUDA_DIR)/bin/nvcc
 
-CC_FLAGS=-O3 -I$(INCLUDE) -L$(CUDA_LIB_DIR) -arch=sm_70 --cudart shared -c
+CC_FLAGS=-O3 -I$(INCLUDE) -L$(CUDA_LIB_DIR) -arch=sm_70 --cudart shared -c -w
 
 INCLUDE := $(CUDA_DIR)/include
 

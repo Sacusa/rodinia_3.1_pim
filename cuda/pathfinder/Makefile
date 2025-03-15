@@ -3,7 +3,7 @@ include ../../common/make.config
 CC := $(CUDA_DIR)/bin/nvcc
 INCLUDE := $(CUDA_DIR)/include
 
-CC_FLAGS := -O3 -I$(INCLUDE) -L$(CUDA_LIB_DIR) -arch=sm_70 --cudart shared
+CC_FLAGS := -O3 -I$(INCLUDE) -L$(CUDA_LIB_DIR) -arch=sm_70 --cudart shared -w
 
 SRC = pathfinder.cu
 

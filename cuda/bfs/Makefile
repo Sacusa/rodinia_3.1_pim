@@ -3,7 +3,7 @@ include ../../common/make.config
 INCLUDE := $(CUDA_DIR)/include
 
 CC := $(CUDA_DIR)/bin/nvcc
-CC_FLAGS=-O3 -I$(INCLUDE) -L$(CUDA_LIB_DIR) -arch=sm_70 --cudart shared
+CC_FLAGS=-O3 -I$(INCLUDE) -L$(CUDA_LIB_DIR) -arch=sm_70 --cudart shared -w
 
 SRC = bfs.cu
 

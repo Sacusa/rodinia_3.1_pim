@@ -8,7 +8,7 @@ all: main.o ./AVI/avilib.o ./AVI/avimod.o
 
 # compile main function file into object (binary)
 main.o: main.cu kernel.cu define.c
-	nvcc $(OUTPUT) $(KERNEL_DIM) main.cu -I./AVI -c -O3 -arch=sm_70
+	nvcc $(OUTPUT) $(KERNEL_DIM) main.cu -I./AVI -c -O3 -arch=sm_70 -w
 
 ./AVI/avilib.o ./AVI/avimod.o:
 	cd AVI; make;

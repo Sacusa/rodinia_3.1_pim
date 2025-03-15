@@ -40,33 +40,10 @@ INCLUDES  += -I. -I$(CUDA_DIR)/include
 # Libs
 LIB       := -L$(CUDA_LIB_DIR) -L$(LIBDIR) -lcuda -lcudart -lGL -lGLU ${LIB}
 
-# Warning flags
-CXXWARN_FLAGS := \
-	-W -Wall \
-	-Wimplicit \
-	-Wswitch \
-	-Wformat \
-	-Wchar-subscripts \
-	-Wparentheses \
-	-Wmultichar \
-	-Wtrigraphs \
-	-Wpointer-arith \
-	-Wcast-align \
-	-Wreturn-type \
-	-Wno-unused-function \
-	$(SPACE)
-
-CWARN_FLAGS := $(CXXWARN_FLAGS) \
-	-Wstrict-prototypes \
-	-Wmissing-prototypes \
-	-Wmissing-declarations \
-	-Wnested-externs \
-	-Wmain \
-
 # Compiler-specific flags
-NVCCFLAGS := --cudart shared -Xcompiler "-m64"
-CXXFLAGS  := -m64 $(CXXWARN_FLAGS)
-CFLAGS    := -m64 $(CWARN_FLAGS)
+NVCCFLAGS := --cudart shared -Xcompiler "-m64" -w
+CXXFLAGS  := -m64 -w
+CFLAGS    := -m64 -w
 
 # Common flags
 COMMONFLAGS ?=
@@ -137,7 +114,7 @@ LIBOBJS= \
     $(OBJDIR)/mummergpu.cu_o \
 
 $(LIBDIR)/libmummergpu$(LIBSUFFIX).a: $(LIBOBJS)
-	ar qv $@ $(LIBOBJS)
+	ar qv $@ $(LIBOBJS) &> /dev/null
 
 BINOBJS= \
     $(OBJDIR)/mummergpu_main.cpp_o

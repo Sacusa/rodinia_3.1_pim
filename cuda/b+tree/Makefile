@@ -1,7 +1,7 @@
 include ../../common/make.config
 
 CUDA_LIB =	-lcuda -lcudart
-CUDA_FLAG = -arch sm_70
+CUDA_FLAG = -arch sm_70 -w
 
 # ====================================================================================================100
 #	END
@@ -106,6 +106,7 @@ main.o:	./common.h \
 		./main.c
 	$(C_C)	$(KERNEL_DIM) ./main.c \
 			-c \
+			-w \
 			-o ./main.o \
 			-O3
 
@@ -118,6 +119,7 @@ main.o:	./common.h \
 									./kernel/kernel_gpu_cuda_wrapper.cu
 	$(CUD_C) $(KERNEL_DIM) ./kernel/kernel_gpu_cuda_wrapper.cu \
 				-c \
+				-w \
 				-o ./kernel/kernel_gpu_cuda_wrapper.o \
 				-O3 \
 				$(CUDA_FLAG)
@@ -127,6 +129,7 @@ main.o:	./common.h \
 										./kernel/kernel_gpu_cuda_wrapper_2.cu
 	$(CUD_C) $(KERNEL_DIM) ./kernel/kernel_gpu_cuda_wrapper_2.cu \
 				-c \
+				-w \
 				-o ./kernel/kernel_gpu_cuda_wrapper_2.o \
 				-O3 \
 				$(CUDA_FLAG)
@@ -140,6 +143,7 @@ main.o:	./common.h \
 						./util/timer/timer.c
 	$(C_C)	./util/timer/timer.c \
 			-c \
+			-w \
 			-o ./util/timer/timer.o \
 			-O3
 
@@ -148,6 +152,7 @@ main.o:	./common.h \
 					./util/num/num.c
 	$(C_C)	./util/num/num.c \
 			-c \
+			-w \
 			-o ./util/num/num.o \
 			-O3
 
@@ -156,6 +161,7 @@ main.o:	./common.h \
 					./util/cuda/cuda.cu
 	$(CUD_C)	./util/cuda/cuda.cu \
 				-c \
+				-w \
 				-o ./util/cuda/cuda.o \
 				-O3 \
 				$(CUDA_FLAG)
@@ -169,7 +175,7 @@ main.o:	./common.h \
 # ========================================================================================================================================================================================================200
 
 clean:
-	rm	*.o *.out \
+	rm	-f *.o *.out \
 		./kernel/*.o \
 		./util/timer/*.o \
 		./util/num/*.o \

@@ -10,10 +10,10 @@ OBJ = gaussian.o
 EXE = gaussian
 
 objects: $(SRC)
-	$(CC) $(KERNEL_DIM) $(SRC) -c -o $(OBJ) $(CC_FLAGS)
+	$(CC) $(KERNEL_DIM) $(SRC) -c -w -o $(OBJ) $(CC_FLAGS)
 
 release: $(SRC)
-	$(CC) $(KERNEL_DIM) $(SRC) -o $(EXE) -I$(INCLUDE) -L$(CUDA_LIB_DIR)
+	$(CC) $(KERNEL_DIM) $(SRC) -w -o $(EXE) -I$(INCLUDE) -L$(CUDA_LIB_DIR)
 
 clean:
 	rm -f gaussian gaussian.o

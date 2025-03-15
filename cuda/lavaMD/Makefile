@@ -40,6 +40,7 @@ main.o:		main.h \
 			./util/device/device.cu
 	$(C_C)	$(KERNEL_DIM) $(OUTPUT) main.c \
 			-c \
+			-w \
 			-o main.o \
 			-O3
 
@@ -47,6 +48,7 @@ main.o:		main.h \
 									./kernel/kernel_gpu_cuda_wrapper.cu
 	$(CUD_C) $(KERNEL_DIM)						./kernel/kernel_gpu_cuda_wrapper.cu \
 									-c \
+									-w \
 									-o ./kernel/kernel_gpu_cuda_wrapper.o \
 									-O3 \
 									$(CUDA_FLAG)
@@ -55,6 +57,7 @@ main.o:		main.h \
 					./util/num/num.c
 	$(C_C)			./util/num/num.c \
 					-c \
+					-w \
 					-o ./util/num/num.o \
 					-O3
 
@@ -62,6 +65,7 @@ main.o:		main.h \
 						./util/timer/timer.c
 	$(C_C)				./util/timer/timer.c \
 						-c \
+						-w \
 						-o ./util/timer/timer.o \
 						-O3
 
@@ -69,12 +73,13 @@ main.o:		main.h \
 						./util/device/device.cu
 	$(CUD_C)			./util/device/device.cu \
 						-c \
+						-w \
 						-o ./util/device/device.o \
 						-O3
 
 # delete all object and executable files
 clean:
-	rm	*.o \
+	rm -f *.o \
 		./kernel/*.o \
 		./util/num/*.o \
 		./util/timer/*.o \

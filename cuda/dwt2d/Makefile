@@ -1,6 +1,4 @@
 #Configure
-#CUDA_INSTALL_PATH ?= /usr/local/cuda
-CUDA_INSTALL_PATH = $(CUDA_DIR)
 EXECUTABLE := dwt2d.o
 
 # Debug options
@@ -17,7 +15,7 @@ CXXFILES :=
 CUFILES := main.cu dwt.cu components.cu dwt_cuda/fdwt53.cu dwt_cuda/fdwt97.cu dwt_cuda/common.cu dwt_cuda/rdwt97.cu dwt_cuda/rdwt53.cu
 
 # Includes
-INCLUDES := -I. -I$(CUDA_INSTALL_PATH)/include
+INCLUDES := -I.
 
 include ../../common/make.config
 
@@ -27,7 +25,7 @@ COMMONFLAGS += $(INCLUDES)
 NVCCFLAGS += $(COMMONFLAGS)
 CXXFLAGS += $(COMMONFLAGS)
 CFLAGS += $(COMMONFLAGS) -std=c99
-LDFLAGS += -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+LDFLAGS += -lcudart
 
 # Warning flags (from cuda common.mk)
 CXXWARN_FLAGS := \
@@ -86,7 +84,7 @@ OUTPUT = -DOUTPUT
 CXX := g++
 CC := gcc
 LINK := g++ -fPIC
-NVCC := $(CUDA_INSTALL_PATH)/bin/nvcc
+NVCC := nvcc
 
 # Generate object files list
 COBJS=$(CFILES:.c=.c.o)
@@ -108,5 +106,4 @@ $(EXECUTABLE): $(COBJS) $(CXXOBJS) $(CUOBJS)
 	#$(LINK) -o $(EXECUTABLE) $(COBJS) $(CXXOBJS) $(CUOBJS) $(LDFLAGS)
 
 clean:
-	rm -f $(COBJS) $(CXXOBJS) $(CUOBJS) $(EXECUTABLE)
-	rm *.bmp.dwt.*
+	rm -f $(COBJS) $(CXXOBJS) $(CUOBJS) $(EXECUTABLE) *.bmp.dwt.*
