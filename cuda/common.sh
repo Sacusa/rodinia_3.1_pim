@@ -1,7 +1,7 @@
 #!/bin/bash
 
-ROOT_DIR=/u/sgupta45/PIM_apps/rodinia_3.1_new/cuda
-DATA_DIR=/u/sgupta45/rodinia_3.1/data
+ROOT_DIR=/opt/PIM_apps/rodinia_3.1_pim/cuda
+DATA_DIR=/opt/PIM_apps/rodinia_3.1_pim/data
 
 declare -a mem_apps=("b+tree" "backprop" "bfs" "cfd" "dwt2d" "gaussian"
     "heartwall" "hotspot" "hotspot3D" "huffman" "kmeans" "lavaMD"
