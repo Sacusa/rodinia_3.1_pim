@@ -36,3 +36,5 @@ for pim_app in "${pim_apps[@]}"; do
 done
 
 wait
+
+./clean.sh

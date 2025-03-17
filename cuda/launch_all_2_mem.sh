@@ -35,3 +35,5 @@ for mem1_app in "${mem1_apps[@]}"; do
 done
 
 wait
+
+./clean.sh
