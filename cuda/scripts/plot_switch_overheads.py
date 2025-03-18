@@ -1,9 +1,5 @@
-#! /u/sgupta45/conda/bin/python3
+#! /usr/bin/python3
 from common import *
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
 
 def get_switch_overheads(stats_db, policies):
     avg_switch_latency = {p:[] for p in policies}
@@ -57,28 +53,21 @@ def gen_plot(vc1_stats, vc2_stats, ylabel, filename):
     plt.xticks(x, [labels[policy] for policy in policies], fontsize=25)
     plt.yticks(fontsize=30)
     plt.ylabel(ylabel, fontsize=30)
-    #plt.ylim([0, 1])
-    #plt.gca().yaxis.set_major_locator(plt.MultipleLocator(0.1))
 
     plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
             ncol=2, mode="expand", borderaxespad=0, fontsize=25)
     plt.grid(axis="y", color="silver", linestyle="-", linewidth=1)
 
     # save the image
-    plt.savefig("../plots/all_" + filename + "_all_vcs.pdf",
-            bbox_inches="tight")
+    plt.savefig("plots/" + filename + ".pdf", bbox_inches="tight")
 
 # Load stats_db
 stats_db = None
 
-if len(sys.argv) == 2:
-    if sys.argv[1] == "refresh":
-        stats_db = recreate_and_return_stats_db()
-    else:
-        print("Incorrect argv\n")
-        exit(-1)
-else:
+if stats_db_exists():
     stats_db = load_db()
+else:
+    stats_db = recreate_and_return_stats_db()
 
 switch_latency_vc_1, switch_conflicts_vc_1 = \
         get_switch_overheads(stats_db, policies)

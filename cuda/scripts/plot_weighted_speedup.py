@@ -1,21 +1,11 @@
-#! /u/sgupta45/conda/bin/python3
+#! /usr/bin/python3
 from common import *
-import statistics
 
 def get_stats(policies):
     avg_mem_speedup = {p:[] for p in policies}
     avg_pim_speedup = {p:[] for p in policies}
 
     for pim in pim_kernels:
-        if pim == 'stream_triad':
-            stream_add_index = pim_kernels.index('stream_add')
-            for policy in policies:
-                avg_mem_speedup[policy].append(
-                        avg_mem_speedup[policy][stream_add_index])
-                avg_pim_speedup[policy].append(
-                        avg_pim_speedup[policy][stream_add_index])
-            continue
-
         for policy in policies:
             mem_speedup = []
             pim_speedup = []
@@ -99,8 +89,7 @@ def gen_plot_all_pim(mem_speedup, pim_speedup):
             linestyles='dashed', color='k', linewidth=2)
 
     # save the image
-    plt.savefig('../plots/all_weighted_speedup_all_vcs.png',
-            bbox_inches='tight')
+    plt.savefig('plots/throughput.pdf', bbox_inches='tight')
 
 # Load baseline execution times
 base_mem_time = get_base_mem_exec_time()
@@ -108,14 +97,11 @@ base_pim_time = get_base_pim_exec_time()
 
 # Load stats_db
 stats_db = None
-if len(sys.argv) == 2:
-    if sys.argv[1] == "refresh":
-        stats_db = recreate_and_return_stats_db()
-    else:
-        print("Incorrect argv\n")
-        exit(-1)
-else:
+
+if stats_db_exists():
     stats_db = load_db()
+else:
+    stats_db = recreate_and_return_stats_db()
 
 vc_1_mem_speedup, vc_1_pim_speedup = get_stats(policies)
 vc_2_mem_speedup, vc_2_pim_speedup = get_stats(policies_vc_2)

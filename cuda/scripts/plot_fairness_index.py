@@ -1,7 +1,5 @@
-#! /u/sgupta45/conda/bin/python3
+#! /usr/bin/python3
 from common import *
-from scipy.stats import gstd
-import statistics
 
 def get_stats(policies):
     avg_fairness_index = {p:[] for p in policies}
@@ -80,7 +78,7 @@ def gen_plot_all_pim(fairness_index):
             linestyles='dashed', color='k', linewidth=2)
 
     # save the image
-    plt.savefig('../plots/all_fairness_index.png', bbox_inches='tight')
+    plt.savefig('plots/fairness_index.pdf', bbox_inches='tight')
 
 # Load baseline execution times
 base_mem_time = get_base_mem_exec_time()
@@ -89,14 +87,10 @@ base_pim_time = get_base_pim_exec_time()
 # Load stats_db
 stats_db = None
 
-if len(sys.argv) == 2:
-    if sys.argv[1] == "refresh":
-        stats_db = recreate_and_return_stats_db()
-    else:
-        print("Incorrect argv\n")
-        exit(-1)
-else:
+if stats_db_exists():
     stats_db = load_db()
+else:
+    stats_db = recreate_and_return_stats_db()
 
 vc_1_fairness_index = get_stats(policies)
 vc_2_fairness_index = get_stats(policies_vc_2)
