@@ -39,8 +39,6 @@ get_mem_args () {
         ARGS="${MEM_APP} -o -i ${DATA_DIR}/kmeans/kdd_cup"
     elif [ "$MEM_APP" == "lavaMD" ]; then
         ARGS="${MEM_APP} -boxes1d 10"
-    elif [ "$MEM_APP" == "leukocyte" ]; then
-        ARGS="${MEM_APP} ${DATA_DIR}/leukocyte/testfile.avi 2"
     elif [ "$MEM_APP" == "lud" ]; then
         ARGS="${MEM_APP} -s 2048"
     elif [ "$MEM_APP" == "mummergpu" ]; then

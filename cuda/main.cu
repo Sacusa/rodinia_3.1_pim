@@ -128,7 +128,6 @@ int main_hotspot(int argc, char** argv);
 int main_hotspot3D(int argc, char** argv);
 int main_huffman(int argc, char** argv);
 int main_lavaMD(int argc, char** argv);
-extern "C" int main_leukocyte(int argc, char** argv);
 int main_lud(int argc, char** argv);
 int main_mummergpu(int argc, char** argv);
 int main_nw(int argc, char** argv);
@@ -358,8 +357,6 @@ void setup_mem(char *kernel, int index)
         // do nothing; kmeans needs a stream argument
     } else if (!strcmp(kernel, "lavaMD")) {
         mem_app[index] = main_lavaMD;
-    } else if (!strcmp(kernel, "leukocyte")) {
-        mem_app[index] = main_leukocyte;
     } else if (!strcmp(kernel, "lud")) {
         mem_app[index] = main_lud;
     } else if (!strcmp(kernel, "mummergpu")) {
