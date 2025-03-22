@@ -23,7 +23,7 @@ num_concurrent_apps=0
 
 for pim_app in "${pim_apps[@]}"; do
     for mem_app in "${mem_apps[@]}"; do
-        ./launch_mem.sh ${pim_app} ${mem_app} &> \
+        ./launch_pim_mem.sh ${pim_app} ${mem_app} &> \
             ${output_dir}/${mem_app}_${pim_app} &
 
         ((num_concurrent_apps++))
