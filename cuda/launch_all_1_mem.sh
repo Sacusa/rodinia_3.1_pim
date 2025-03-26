@@ -6,20 +6,11 @@ if [ "$#" -lt 1 ]; then
     exit
 fi
 
-policy_out_dir=$(set_policy_in_config "$@")
-
-if [[ $? -ne 0 ]]; then
-    exit
-fi
-
-output_dir=output/${policy_out_dir}
-mkdir -p ${output_dir}
-
 max_concurrent_apps=$((`nproc`))
 num_concurrent_apps=0
 
 for mem_app in "${mem_apps[@]}"; do
-    ./launch_1_mem.sh ${mem_app} &> ${output_dir}/${mem_app}_nop &
+    ./launch_1_mem.sh ${mem_app} ${@} &
 
     ((num_concurrent_apps++))
 
@@ -30,5 +21,3 @@ for mem_app in "${mem_apps[@]}"; do
 done
 
 wait
-
-./clean.sh
