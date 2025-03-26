@@ -6,10 +6,9 @@ if [ "$#" -lt 1 ]; then
     exit
 fi
 
-declare -a mem1_apps=("gaussian" "nn" "pathfinder")
+declare -a mem1_apps=("cfd" "gaussian" "nn" "pathfinder")
 
 policy_out_dir=$(set_policy_in_config "$@")
-
 if [[ $? -ne 0 ]]; then
     exit
 fi

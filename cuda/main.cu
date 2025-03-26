@@ -121,7 +121,6 @@ cudaStream_t pim_stream;
 extern "C" int main_btree(int argc, char** argv);
 int main_backprop(int argc, char** argv);
 int main_bfs(int argc, char** argv);
-int main_euler3d(int argc, char** argv);  // CFD
 int main_dwt2d(int argc, char** argv);
 int main_heartwall(int argc, char** argv);
 int main_hotspot(int argc, char** argv);
@@ -136,6 +135,7 @@ int main_srad_v2(int argc, char** argv);
 int main_streamcluster(int argc, char** argv);
 
 // Rodinia benchmark declarations (user defined stream)
+int main_euler3d(int argc, char** argv, cudaStream_t);  // CFD
 int main_gaussian(int argc, char** argv, cudaStream_t stream);
 int main_kmeans(int argc, char** argv, cudaStream_t stream);
 int main_nn(int argc, char** argv, cudaStream_t stream, bool is_first);
@@ -340,7 +340,7 @@ void setup_mem(char *kernel, int index)
     } else if (!strcmp(kernel, "bfs")) {
         mem_app[index] = main_bfs;
     } else if (!strcmp(kernel, "cfd")) {
-        mem_app[index] = main_euler3d;
+        // do nothing; cfd needs a stream argument
     } else if (!strcmp(kernel, "dwt2d")) {
         mem_app[index] = main_dwt2d;
     } else if (!strcmp(kernel, "gaussian")) {
@@ -443,7 +443,9 @@ void run_mem(int mem_app_index, char *kernel, int argc, char **argv,
     }
 
     // Only some applications use the passed stream object for now
-    if (!strcmp(kernel, "gaussian")) {
+    if (!strcmp(kernel, "cfd")) {
+        main_euler3d(argc, argv_copy, stream);
+    } else if (!strcmp(kernel, "gaussian")) {
         main_gaussian(argc, argv_copy, stream);
     } else if (!strcmp(kernel, "kmeans")) {
         main_kmeans(argc, argv_copy, stream);

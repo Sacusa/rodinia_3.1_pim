@@ -9,7 +9,6 @@ def get_stats(policies):
         for policy in policies:
             mem_speedup = []
             pim_speedup = []
-            throughput = []
 
             for app in applications:
                 mem_time, pim_time = get_exec_time(policy, pim, app, True,
@@ -17,8 +16,6 @@ def get_stats(policies):
 
                 mem_speedup.append(base_mem_time[app] / mem_time)
                 pim_speedup.append(base_pim_time[pim] / pim_time)
-
-                throughput.append(mem_speedup[-1] + pim_speedup[-1])
 
             avg_mem_speedup[policy].append(amean(mem_speedup))
             avg_pim_speedup[policy].append(amean(pim_speedup))

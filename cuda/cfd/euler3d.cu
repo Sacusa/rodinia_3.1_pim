@@ -113,27 +113,30 @@ void dealloc(T* array)
 }
 
 template <typename T>
-void copy(T* dst, T* src, int N)
+void copy(T* dst, T* src, int N, cudaStream_t stream)
 {
-	checkCudaErrors(cudaMemcpy((void*)dst, (void*)src, N*sizeof(T), cudaMemcpyDeviceToDevice));
+	checkCudaErrors(cudaMemcpyAsync((void*)dst, (void*)src, N*sizeof(T), cudaMemcpyDeviceToDevice, stream));
+    cudaStreamSynchronize(stream);
 }
 
 template <typename T>
-void upload(T* dst, T* src, int N)
+void upload(T* dst, T* src, int N, cudaStream_t stream)
 {
-	checkCudaErrors(cudaMemcpy((void*)dst, (void*)src, N*sizeof(T), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpyAsync((void*)dst, (void*)src, N*sizeof(T), cudaMemcpyHostToDevice, stream));
+    cudaStreamSynchronize(stream);
 }
 
 template <typename T>
-void download(T* dst, T* src, int N)
+void download(T* dst, T* src, int N, cudaStream_t stream)
 {
-	checkCudaErrors(cudaMemcpy((void*)dst, (void*)src, N*sizeof(T), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpyAsync((void*)dst, (void*)src, N*sizeof(T), cudaMemcpyDeviceToHost, stream));
+    cudaStreamSynchronize(stream);
 }
 
-void dump(float* variables, int nel, int nelr)
+void dump(float* variables, int nel, int nelr, cudaStream_t stream)
 {
 	float* h_variables = new float[nelr*NVAR];
-	download(h_variables, variables, nelr*NVAR);
+	download(h_variables, variables, nelr*NVAR, stream);
 
 	{
 		std::ofstream file("density");
@@ -176,10 +179,11 @@ __global__ void cuda_initialize_variables(int nelr, float* variables)
 	for(int j = 0; j < NVAR; j++)
 		variables[i + j*nelr] = ff_variable[j];
 }
-void initialize_variables(int nelr, float* variables)
+void initialize_variables(int nelr, float* variables, cudaStream_t stream)
 {
 	dim3 Dg(nelr / BLOCK_SIZE_1), Db(BLOCK_SIZE_1);
-	cuda_initialize_variables<<<Dg, Db>>>(nelr, variables);
+	cuda_initialize_variables<<<Dg, Db, 0, stream>>>(nelr, variables);
+    cudaStreamSynchronize(stream);
 	getLastCudaError("initialize_variables failed");
 }
 
@@ -246,10 +250,11 @@ __global__ void cuda_compute_step_factor(int nelr, float* variables, float* area
 	// dt = float(0.5f) * sqrtf(areas[i]) /  (||v|| + c).... but when we do time stepping, this later would need to be divided by the area, so we just do it all at once
 	step_factors[i] = float(0.5f) / (sqrtf(areas[i]) * (sqrtf(speed_sqd) + speed_of_sound));
 }
-void compute_step_factor(int nelr, float* variables, float* areas, float* step_factors)
+void compute_step_factor(int nelr, float* variables, float* areas, float* step_factors, cudaStream_t stream)
 {
 	dim3 Dg(nelr / BLOCK_SIZE_2), Db(BLOCK_SIZE_2);
-	cuda_compute_step_factor<<<Dg, Db>>>(nelr, variables, areas, step_factors);
+	cuda_compute_step_factor<<<Dg, Db, 0, stream>>>(nelr, variables, areas, step_factors);
+    cudaStreamSynchronize(stream);
 	getLastCudaError("compute_step_factor failed");
 }
 
@@ -387,10 +392,11 @@ __global__ void cuda_compute_flux(int nelr, int* elements_surrounding_elements, 
 	fluxes[i + (VAR_MOMENTUM+2)*nelr] = flux_i_momentum.z;
 	fluxes[i + VAR_DENSITY_ENERGY*nelr] = flux_i_density_energy;
 }
-void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, float* variables, float* fluxes)
+void compute_flux(int nelr, int* elements_surrounding_elements, float* normals, float* variables, float* fluxes, cudaStream_t stream)
 {
 	dim3 Dg(nelr / BLOCK_SIZE_3), Db(BLOCK_SIZE_3);
-	cuda_compute_flux<<<Dg,Db>>>(nelr, elements_surrounding_elements, normals, variables, fluxes);
+	cuda_compute_flux<<<Dg,Db,0,stream>>>(nelr, elements_surrounding_elements, normals, variables, fluxes);
+    cudaStreamSynchronize(stream);
 	getLastCudaError("compute_flux failed");
 }
 
@@ -406,17 +412,18 @@ __global__ void cuda_time_step(int j, int nelr, float* old_variables, float* var
 	variables[i + (VAR_MOMENTUM+1)*nelr] = old_variables[i + (VAR_MOMENTUM+1)*nelr] + factor*fluxes[i + (VAR_MOMENTUM+1)*nelr];
 	variables[i + (VAR_MOMENTUM+2)*nelr] = old_variables[i + (VAR_MOMENTUM+2)*nelr] + factor*fluxes[i + (VAR_MOMENTUM+2)*nelr];
 }
-void time_step(int j, int nelr, float* old_variables, float* variables, float* step_factors, float* fluxes)
+void time_step(int j, int nelr, float* old_variables, float* variables, float* step_factors, float* fluxes, cudaStream_t stream)
 {
 	dim3 Dg(nelr / BLOCK_SIZE_4), Db(BLOCK_SIZE_4);
-	cuda_time_step<<<Dg,Db>>>(j, nelr, old_variables, variables, step_factors, fluxes);
+	cuda_time_step<<<Dg,Db,0,stream>>>(j, nelr, old_variables, variables, step_factors, fluxes);
+    cudaStreamSynchronize(stream);
 	getLastCudaError("update failed");
 }
 
 /*
  * Main function
  */
-int main_euler3d(int argc, char** argv)
+int main_euler3d(int argc, char** argv, cudaStream_t stream)
 {
   printf("WG size of kernel:initialize = %d, WG size of kernel:compute_step_factor = %d, WG size of kernel:compute_flux = %d, WG size of kernel:time_step = %d\n", BLOCK_SIZE_1, BLOCK_SIZE_2, BLOCK_SIZE_3, BLOCK_SIZE_4);
 
@@ -469,12 +476,25 @@ int main_euler3d(int argc, char** argv)
 		compute_flux_contribution(h_ff_variable[VAR_DENSITY], h_ff_momentum, h_ff_variable[VAR_DENSITY_ENERGY], ff_pressure, ff_velocity, h_ff_flux_contribution_momentum_x, h_ff_flux_contribution_momentum_y, h_ff_flux_contribution_momentum_z, h_ff_flux_contribution_density_energy);
 
 		// copy far field conditions to the gpu
-		checkCudaErrors( cudaMemcpyToSymbol(ff_variable,          h_ff_variable,          NVAR*sizeof(float)) );
-		checkCudaErrors( cudaMemcpyToSymbol(ff_flux_contribution_momentum_x, &h_ff_flux_contribution_momentum_x, sizeof(float3)) );
-		checkCudaErrors( cudaMemcpyToSymbol(ff_flux_contribution_momentum_y, &h_ff_flux_contribution_momentum_y, sizeof(float3)) );
-		checkCudaErrors( cudaMemcpyToSymbol(ff_flux_contribution_momentum_z, &h_ff_flux_contribution_momentum_z, sizeof(float3)) );
+		checkCudaErrors( cudaMemcpyToSymbolAsync(ff_variable, h_ff_variable,
+                    NVAR*sizeof(float), 0, cudaMemcpyHostToDevice, stream) );
+		checkCudaErrors( cudaMemcpyToSymbolAsync(
+                    ff_flux_contribution_momentum_x,
+                    &h_ff_flux_contribution_momentum_x, sizeof(float3), 0,
+                    cudaMemcpyHostToDevice, stream) );
+		checkCudaErrors( cudaMemcpyToSymbolAsync(
+                    ff_flux_contribution_momentum_y,
+                    &h_ff_flux_contribution_momentum_y, sizeof(float3), 0,
+                    cudaMemcpyHostToDevice, stream) );
+		checkCudaErrors( cudaMemcpyToSymbolAsync(
+                    ff_flux_contribution_momentum_z,
+                    &h_ff_flux_contribution_momentum_z, sizeof(float3), 0,
+                    cudaMemcpyHostToDevice, stream) );
 
-		checkCudaErrors( cudaMemcpyToSymbol(ff_flux_contribution_density_energy, &h_ff_flux_contribution_density_energy, sizeof(float3)) );
+		checkCudaErrors( cudaMemcpyToSymbolAsync(
+                    ff_flux_contribution_density_energy,
+                    &h_ff_flux_contribution_density_energy, sizeof(float3), 0,
+                    cudaMemcpyHostToDevice, stream) );
 	}
 	int nel;
 	int nelr;
@@ -526,13 +546,14 @@ int main_euler3d(int argc, char** argv)
 		}
 
 		areas = alloc<float>(nelr);
-		upload<float>(areas, h_areas, nelr);
+		upload<float>(areas, h_areas, nelr, stream);
 
 		elements_surrounding_elements = alloc<int>(nelr*NNB);
-		upload<int>(elements_surrounding_elements, h_elements_surrounding_elements, nelr*NNB);
+		upload<int>(elements_surrounding_elements,
+                h_elements_surrounding_elements, nelr*NNB, stream);
 
 		normals = alloc<float>(nelr*NDIM*NNB);
-		upload<float>(normals, h_normals, nelr*NDIM*NNB);
+		upload<float>(normals, h_normals, nelr*NDIM*NNB, stream);
 
 		delete[] h_areas;
 		delete[] h_elements_surrounding_elements;
@@ -541,18 +562,18 @@ int main_euler3d(int argc, char** argv)
 
 	// Create arrays and set initial conditions
 	float* variables = alloc<float>(nelr*NVAR);
-	initialize_variables(nelr, variables);
+	initialize_variables(nelr, variables, stream);
 
 	float* old_variables = alloc<float>(nelr*NVAR);
 	float* fluxes = alloc<float>(nelr*NVAR);
 	float* step_factors = alloc<float>(nelr);
 
 	// make sure all memory is floatly allocated before we start timing
-	initialize_variables(nelr, old_variables);
-	initialize_variables(nelr, fluxes);
+	initialize_variables(nelr, old_variables, stream);
+	initialize_variables(nelr, fluxes, stream);
 	cudaMemset( (void*) step_factors, 0, sizeof(float)*nelr );
 	// make sure CUDA isn't still doing something before we start timing
-	cudaStreamSynchronize(0);
+	cudaStreamSynchronize(stream);
 
 	// these need to be computed the first time in order to compute time step
 	std::cout << "Starting..." << std::endl;
@@ -567,29 +588,29 @@ int main_euler3d(int argc, char** argv)
 	// Begin iterations
 	for(int i = 0; i < iterations; i++)
 	{
-		copy<float>(old_variables, variables, nelr*NVAR);
+		copy<float>(old_variables, variables, nelr*NVAR, stream);
 
 		// for the first iteration we compute the time step
-		compute_step_factor(nelr, variables, areas, step_factors);
+		compute_step_factor(nelr, variables, areas, step_factors, stream);
 		getLastCudaError("compute_step_factor failed");
 
 		for(int j = 0; j < RK; j++)
 		{
-			compute_flux(nelr, elements_surrounding_elements, normals, variables, fluxes);
+			compute_flux(nelr, elements_surrounding_elements, normals, variables, fluxes, stream);
 			getLastCudaError("compute_flux failed");
-			time_step(j, nelr, old_variables, variables, step_factors, fluxes);
+			time_step(j, nelr, old_variables, variables, step_factors, fluxes, stream);
 			getLastCudaError("time_step failed");
 		}
 	}
 
-	cudaStreamSynchronize(0);
+	cudaStreamSynchronize(stream);
 	//	CUT_SAFE_CALL( cutStopTimer(timer) );
 	sdkStopTimer(&timer);
 
 	std::cout  << (sdkGetAverageTimerValue(&timer)/1000.0)  / iterations << " seconds per iteration" << std::endl;
 
 	std::cout << "Saving solution..." << std::endl;
-	dump(variables, nel, nelr);
+	dump(variables, nel, nelr, stream);
 	std::cout << "Saved solution..." << std::endl;
 
 
