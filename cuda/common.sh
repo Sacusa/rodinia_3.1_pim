@@ -66,7 +66,9 @@ get_mem_args () {
     echo "${ARGS}"
 }
 
-set_policy_in_config () {
+set_config_and_get_policy_name () {
+    do_set_config=$1 ; shift
+    config_dir=$1 ; shift
     policy=$1
 
     if [ "${policy}" == "bliss" ]; then
@@ -80,16 +82,20 @@ set_policy_in_config () {
         clearing_interval=$2
         blacklisting_threshold=$3
 
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 0' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/bliss_clearing_interval/c\-bliss_clearing_interval '"${clearing_interval}" ${ROOT_DIR}/gpgpusim.config
-        sed -i '/bliss_blacklisting_threshold/c\-bliss_blacklisting_threshold '"${blacklisting_threshold}" ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 0' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${config_dir}/gpgpusim.config
+            sed -i '/bliss_clearing_interval/c\-bliss_clearing_interval '"${clearing_interval}" ${config_dir}/gpgpusim.config
+            sed -i '/bliss_blacklisting_threshold/c\-bliss_blacklisting_threshold '"${blacklisting_threshold}" ${config_dir}/gpgpusim.config
+        fi
 
         echo "bliss_interval_${clearing_interval}_threshold_${blacklisting_threshold}"
 
     elif [ "${policy}" == "fifo" ]; then
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 1' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 1' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${config_dir}/gpgpusim.config
+        fi
 
         echo "fifo"
 
@@ -102,14 +108,18 @@ set_policy_in_config () {
 
         cap=$2
 
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 2' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 2' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" ${config_dir}/gpgpusim.config
+        fi
 
         echo "frfcfs_cap_${cap}"
 
     elif [ "${policy}" == "fr_rr_fcfs" ]; then
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 3' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 3' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${config_dir}/gpgpusim.config
+        fi
 
         echo "fr_rr_fcfs"
 
@@ -124,9 +134,11 @@ set_policy_in_config () {
         cap=$2
         max_pim_slowdown=$3
 
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 4' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" ${ROOT_DIR}/gpgpusim.config
-        sed -i '/dram_max_pim_slowdown/c\-dram_max_pim_slowdown '"${max_pim_slowdown}" ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 4' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap '"${cap}" ${config_dir}/gpgpusim.config
+            sed -i '/dram_max_pim_slowdown/c\-dram_max_pim_slowdown '"${max_pim_slowdown}" ${config_dir}/gpgpusim.config
+        fi
 
         echo "f3fs_cap_${cap}_slowdown_${max_pim_slowdown}"
 
@@ -141,21 +153,27 @@ set_policy_in_config () {
 
         queue_size_string="${2}:${3}:${4}"
 
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 5' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/dram_pim_queue_size/c\-dram_pim_queue_size '"${queue_size_string}" ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 5' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${config_dir}/gpgpusim.config
+            sed -i '/dram_pim_queue_size/c\-dram_pim_queue_size '"${queue_size_string}" ${config_dir}/gpgpusim.config
+        fi
 
         echo "gi_${2}_${3}_${4}"
 
     elif [ "${policy}" == "mem_first" ]; then
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 6' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 6' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${config_dir}/gpgpusim.config
+        fi
 
         echo "mem_first"
 
     elif [ "${policy}" == "pim_first" ]; then
-        sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 7' ${ROOT_DIR}/gpgpusim.config
-        sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${ROOT_DIR}/gpgpusim.config
+        if [ "${do_set_config}" == 1 ]; then
+            sed -i '/gpgpu_dram_scheduler/c\-gpgpu_dram_scheduler 7' ${config_dir}/gpgpusim.config
+            sed -i '/frfcfs_cap/c\-frfcfs_cap 0' ${config_dir}/gpgpusim.config
+        fi
 
         echo "pim_first"
 
@@ -164,4 +182,12 @@ set_policy_in_config () {
         exit 1
 
     fi
+}
+
+get_policy_name () {
+    set_config_and_get_policy_name 0 "" ${@}
+}
+
+set_policy_in_config () {
+    set_config_and_get_policy_name 1 ${@}
 }
