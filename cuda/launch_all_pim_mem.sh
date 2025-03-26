@@ -9,22 +9,12 @@ fi
 declare -a pim_apps=("stream_copy" "stream_daxpy" "stream_scale" "bn_fwd"
     "bn_bwd" "fully_connected" "kmeans" "histogram" "grim")
 
-policy_out_dir=$(set_policy_in_config "$@")
-
-if [[ $? -ne 0 ]]; then
-    exit
-fi
-
-output_dir=output/${policy_out_dir}
-mkdir -p ${output_dir}
-
 max_concurrent_apps=$((`nproc` / 2))
 num_concurrent_apps=0
 
 for pim_app in "${pim_apps[@]}"; do
     for mem_app in "${mem_apps[@]}"; do
-        ./launch_pim_mem.sh ${pim_app} ${mem_app} &> \
-            ${output_dir}/${mem_app}_${pim_app} &
+        ./launch_pim_mem.sh ${pim_app} ${mem_app} ${@} &
 
         ((num_concurrent_apps++))
 
