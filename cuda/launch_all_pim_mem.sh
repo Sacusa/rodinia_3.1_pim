@@ -6,8 +6,9 @@ if [ "$#" -lt 1 ]; then
     exit
 fi
 
-declare -a pim_apps=("stream_copy" "stream_daxpy" "stream_scale" "bn_fwd"
-    "bn_bwd" "fully_connected" "kmeans" "histogram" "grim")
+#declare -a pim_apps=("stream_add" "stream_copy" "stream_daxpy" "stream_scale"
+#    "bn_fwd" "bn_bwd" "fully_connected" "kmeans" "histogram" "grim")
+declare -a pim_apps=("stream_copy" "bn_fwd")
 
 max_concurrent_apps=$((`nproc` / 2))
 num_concurrent_apps=0

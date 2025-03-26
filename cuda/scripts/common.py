@@ -15,9 +15,10 @@ applications = ['b+tree', 'backprop', 'bfs', 'cfd', 'dwt2d', 'gaussian',
         'lud', 'mummergpu', 'nn', 'nw', 'pathfinder', 'srad_v1', 'srad_v2',
         'streamcluster']
 
-pim_kernels = ['stream_add', 'stream_copy', 'stream_daxpy', 'stream_scale',
-        'bn_fwd', 'bn_bwd', 'fully_connected', 'kmeans',
-        'histogram', 'grim']
+#pim_kernels = ['stream_add', 'stream_copy', 'stream_daxpy', 'stream_scale',
+#        'bn_fwd', 'bn_bwd', 'fully_connected', 'kmeans',
+#        'histogram', 'grim']
+pim_kernels = ['stream_copy', 'bn_fwd']
 
 base_gpu_filename = {'fully_connected': 'fc_262144', 'grim': 'grim_32',
         'histogram': 'histogram_262144', 'kmeans': 'kmeans_262144'}
