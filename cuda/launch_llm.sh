@@ -15,6 +15,7 @@ fi
 # Set output directory
 output_dir=${BASE_OUT_DIR}/${policy_name}
 mkdir -p ${output_dir}
+output_file=${output_dir}/llm
 
 # Set up a private temporary directory
 temp_dir=${BASE_TMP_DIR}/${policy_name}_llm
@@ -31,8 +32,9 @@ fi
 BIN="${ROOT_DIR}/main"
 args=('4')
 
-${BIN} "${args[@]}" &> ${output_dir}/llm
+${BIN} "${args[@]}" &> ${output_file}
 
-# Delete temporary directory
+# Cleanup
+ensure_output_file_is_ascii ${output_file}
 cd ${ROOT_DIR}
 rm -rf ${temp_dir}

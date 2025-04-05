@@ -18,6 +18,7 @@ fi
 # Set output directory
 output_dir=${BASE_OUT_DIR}/${policy_name}
 mkdir -p ${output_dir}
+output_file=${mem2_app}_${mem1_app}_mem
 
 # Set up a private temporary directory
 temp_dir=${BASE_TMP_DIR}/${policy_name}_${mem1_app}_${mem2_app}_mem
@@ -36,8 +37,9 @@ args=('2')
 args+=("$(get_mem_args "${mem1_app}")")
 args+=("$(get_mem_args "${mem2_app}")")
 
-${BIN} "${args[@]}" &> ${output_dir}/${mem2_app}_${mem1_app}_mem
+${BIN} "${args[@]}" &> ${output_file}
 
-# Delete temporary directory
+# Cleanup
+ensure_output_file_is_ascii ${output_file}
 cd ${ROOT_DIR}
 rm -rf ${temp_dir}

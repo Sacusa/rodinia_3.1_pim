@@ -191,3 +191,14 @@ get_policy_name () {
 set_policy_in_config () {
     set_config_and_get_policy_name 1 ${@}
 }
+
+ensure_output_file_is_ascii () {
+    file_name=$1
+    file_type=$(file ${file_name} | cut -d' ' -f2)
+
+    if [[ ${file_type} = "data" ]]; then
+        temp_file="temp_"$(cat /dev/urandom | tr -cd 'a-f0-9' | head -c 32)
+        cat ${file_name} | tr -d '\000' > ${temp_file}
+        mv ${temp_file} ${file_name}
+    fi
+}
