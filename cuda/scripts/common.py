@@ -320,7 +320,7 @@ def get_base_mem_exec_time():
     base_mem_time = {app:0 for app in applications}
 
     for app in applications:
-        for line in open('../pim_frfcfs/single_apps/' + app + '_nop'):
+        for line in open('../output_baseline/frfcfs_cap_0/' + app + '_nop'):
             if 'gpu_tot_sim_cycle' in line:
                 tokens = line.split()
                 assert(len(tokens) == 3)

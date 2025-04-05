@@ -42,6 +42,11 @@ launch_competitive_and_collaborative () {
     # wait
 }
 
+# VC 1 baseline
+sed -i '/gpgpu_shader_to_mem_vcs/c\-gpgpu_shader_to_mem_vcs 1' gpgpusim.config
+./launch_all_1_mem.sh frfcfs 0
+mv output output_baseline
+
 # VC 1 experiments
 sed -i '/gpgpu_shader_to_mem_vcs/c\-gpgpu_shader_to_mem_vcs 1' gpgpusim.config
 launch_competitive_and_collaborative 256 0.5
