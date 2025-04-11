@@ -15,10 +15,9 @@ applications = ['b+tree', 'backprop', 'bfs', 'cfd', 'dwt2d', 'gaussian',
         'lud', 'mummergpu', 'nn', 'nw', 'pathfinder', 'srad_v1', 'srad_v2',
         'streamcluster']
 
-#pim_kernels = ['stream_add', 'stream_copy', 'stream_daxpy', 'stream_scale',
-#        'bn_fwd', 'bn_bwd', 'fully_connected', 'kmeans',
-#        'histogram', 'grim']
-pim_kernels = ['stream_copy', 'bn_fwd']
+pim_kernels = ['stream_add', 'stream_copy', 'stream_daxpy', 'stream_scale',
+        'bn_fwd', 'bn_bwd', 'fully_connected', 'kmeans',
+        'histogram', 'grim']
 
 base_gpu_filename = {'fully_connected': 'fc_262144', 'grim': 'grim_32',
         'histogram': 'histogram_262144', 'kmeans': 'kmeans_262144'}
@@ -27,13 +26,13 @@ base_pim_files = {'kmeans': 'kmeans_1', 'fully_connected': 'fc_256',
 
 policies = [
         'fifo',
-        # 'mem_first',
-        # 'pim_first',
-        # 'frfcfs_cap_0',
-        # 'frfcfs_cap_32',
-        # 'bliss_interval_10000_threshold_4',
+        'mem_first',
+        'pim_first',
+        'frfcfs_cap_0',
+        'frfcfs_cap_32',
+        'bliss_interval_10000_threshold_4',
         'fr_rr_fcfs',
-        # 'gi',
+        'gi',
         'f3fs_cap_256_slowdown_1'
 ]
 

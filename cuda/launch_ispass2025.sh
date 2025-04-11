@@ -2,26 +2,26 @@
 source common.sh
 
 launch_competitive () {
-    # ./launch_all_pim_mem.sh bliss 10000 4
+    ./launch_all_pim_mem.sh bliss 10000 4
     ./launch_all_pim_mem.sh fifo
-    # ./launch_all_pim_mem.sh frfcfs 0
-    # ./launch_all_pim_mem.sh frfcfs 32
+    ./launch_all_pim_mem.sh frfcfs 0
+    ./launch_all_pim_mem.sh frfcfs 32
     ./launch_all_pim_mem.sh fr_rr_fcfs
     ./launch_all_pim_mem.sh f3fs 256 1
-    # ./launch_all_pim_mem.sh gi 64 56 32
-    # ./launch_all_pim_mem.sh mem_first
-    # ./launch_all_pim_mem.sh pim_first
+    ./launch_all_pim_mem.sh gi 64 56 32
+    ./launch_all_pim_mem.sh mem_first
+    ./launch_all_pim_mem.sh pim_first
 }
 
 launch_collaborative () {
-    # ./launch_llm.sh bliss 10000 4
+    ./launch_llm.sh bliss 10000 4
     ./launch_llm.sh fifo
-    # ./launch_llm.sh frfcfs 0
-    # ./launch_llm.sh frfcfs 32
+    ./launch_llm.sh frfcfs 0
+    ./launch_llm.sh frfcfs 32
     ./launch_llm.sh fr_rr_fcfs
-    # ./launch_llm.sh gi 64 56 32
-    # ./launch_llm.sh mem_first
-    # ./launch_llm.sh pim_first
+    ./launch_llm.sh gi 64 56 32
+    ./launch_llm.sh mem_first
+    ./launch_llm.sh pim_first
 }
 
 # VC 1 baseline
