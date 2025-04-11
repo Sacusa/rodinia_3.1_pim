@@ -105,18 +105,6 @@ int main_mummergpu(int argc, char** argv)
 {
    ParseCommandLine(argc, argv);
 
-   fprintf(stderr, "TWO_LEVEL_NODE_TREE is %d\n", TWO_LEVEL_NODE_TREE);
-   fprintf(stderr, "TWO_LEVEL_CHILD_TREE is %d\n", TWO_LEVEL_CHILD_TREE);
-   fprintf(stderr, "QRYTEX is %d\n", QRYTEX);
-   fprintf(stderr, "COALESCED_QUERIES is %d\n", COALESCED_QUERIES);
-   fprintf(stderr, "REFTEX is %d\n", REFTEX);
-   fprintf(stderr, "REORDER_REF is %d\n", REORDER_REF);
-   fprintf(stderr, "NODETEX is %d\n", NODETEX);
-   fprintf(stderr, "CHILDTEX is %d\n", CHILDTEX);
-   fprintf(stderr, "MERGETEX is %d\n", MERGETEX);
-   fprintf(stderr, "REORDER_TREE is %d\n", REORDER_TREE);
-	fprintf(stderr, "RENUMBER_TREE is %d\n", RENUMBER_TREE);
-
    int err = 0;
 
    Reference ref;

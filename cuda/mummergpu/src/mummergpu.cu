@@ -252,7 +252,6 @@ extern "C"
 int createQuerySet(const char* fromFile, QuerySet* queries)
 {
 
-   fprintf(stderr, "Opening %s...\n", fromFile);
    int qfile = open(fromFile, O_RDONLY);
 
    if (qfile == -1)
@@ -333,8 +332,6 @@ void buildReferenceTexture(Reference* ref,
                            char* texfilename,
                            Statistics* statistics)
 {
-    fprintf(stderr, "Building reference texture...\n");
-
     PixelOfNode* nodeTexture = NULL;
     PixelOfChildren * childrenTexture = NULL;
 
@@ -387,7 +384,6 @@ void buildReferenceTexture(Reference* ref,
 
  	ref->bytes_on_board = (width * node_height * sizeof(PixelOfNode)) +
                           (width * children_height * sizeof(PixelOfChildren));
-	fprintf(stderr, "This tree will need %d bytes on the board\n", ref->bytes_on_board);
 
 #if REORDER_REF
     char * reordertimer = createTimer();
@@ -401,8 +397,6 @@ void buildReferenceTexture(Reference* ref,
     int refstrsize = numrows * refpitch;
     ref->h_ref_array = (char *) malloc(refstrsize);
     ref->bytes_on_board += refstrsize;
-
-    fprintf(stderr, "The refstr (reordered) requires %d bytes\n", refstrsize);
 
     int z_max = numrows * refpitch;
     for (int z = 0; z < z_max; z++) {
@@ -450,7 +444,6 @@ void buildReferenceTexture(Reference* ref,
     	statistics->t_reorder_ref_str += getTimerValue(reordertimer);
     deleteTimer(reordertimer);
 #else
-    fprintf(stderr, "The refstr requires %d bytes\n", ref->len);
 	ref->bytes_on_board += ref->len;
 #endif
 
@@ -883,8 +876,6 @@ void loadReference(MatchContext* ctx) {
         stopTimer(toboardtimer);
         ctx->statistics.t_tree_to_board += getTimerValue(toboardtimer);
         deleteTimer(toboardtimer);
-
-        fprintf(stderr, "done\n");
     }
     else {
         ref->d_node_tex_array = NULL;
@@ -894,13 +885,6 @@ void loadReference(MatchContext* ctx) {
 
 
 
-void dumpQueryBlockInfo(QuerySet* queries)
-{
-	fprintf(stderr, "\tProcessing queries %s to %s\n",
-		queries->h_names[0],
-		queries->h_names[queries->count-1]);
-}
-
 void loadQueries(MatchContext* ctx)
 {
     QuerySet* queries = ctx->queries;
@@ -909,12 +893,9 @@ void loadQueries(MatchContext* ctx)
     unsigned int numQueries = queries->count;
 
     if (!ctx->on_cpu) {
-        fprintf(stderr, "Allocating device memory for queries... ");
-
 	    char* toboardtimer = createTimer();
 	    startTimer(toboardtimer);
 
-		dumpQueryBlockInfo(queries);
         CUDA_MALLOC((void**) &queries->d_tex_array, queries->texlen);                                                    \
 
 
@@ -957,14 +938,11 @@ void loadQueries(MatchContext* ctx)
 	    ctx->statistics.t_queries_to_board += getTimerValue(toboardtimer);
 	    deleteTimer(toboardtimer);
 
-		fprintf(stderr, "\tallocated %ld bytes\n", queries->bytes_on_board);
-
     }
     else {
         queries->d_addrs_tex_array = NULL;
         queries->d_tex_array = NULL;
         queries->d_lengths_array = NULL;
-        fprintf(stderr, " allocated %ld bytes\n", 2 * numQueries*sizeof(int) + queries->texlen);
     }
 
 
@@ -1040,8 +1018,6 @@ void buildCoordOffsetArray(MatchContext* ctx,
 		unsigned int last_qry = numQueries - 1;
 		unsigned int last_qry_len = lengths[last_qry] - match_length + 1;
 		numCoords = coord_offsets[last_qry] + last_qry_len;
-		fprintf(stderr, "Need %d match coords for this result array\n",
-			numCoords);
 	}
 #endif
     *num_coords = numCoords;
@@ -1067,16 +1043,10 @@ void loadResultBuffer(MatchContext* ctx)
     deleteTimer(offsettimer);
 
 	unsigned int numCoords = ctx->results.numCoords;
-	fprintf(stderr, "Allocating result array for %d queries (%d bytes) ...",
-			numQueries, numCoords*sizeof(MatchCoord) );
-
     size_t boardFreeMemory = 0;
     size_t total_mem = 0;
 
 	boardMemory(&boardFreeMemory, &total_mem);
-
-   fprintf(stderr,"board free memory: %u total memory: %u\n",
-          boardFreeMemory, total_mem);
 
     ctx->results.h_match_coords = (MatchCoord*) calloc( numCoords, sizeof(MatchCoord));
     if (ctx->results.h_match_coords == NULL)
@@ -1116,8 +1086,6 @@ void loadResultBuffer(MatchContext* ctx)
     else {
         ctx->results.d_match_coords = NULL;
     }
-
-    fprintf(stderr, "done\n");
 }
 
 
@@ -1332,7 +1300,6 @@ void coordsToPrintBuffers(MatchContext* ctx,
     *matches = M;
 	*nextqry = qry;
 	*nextqrychar = qrychar;
-	fprintf(stderr, "Allocing %d bytes of host memory for %d alignments\n",  alignmentOffset * sizeof(Alignment), numAlignments);
     *alignments = (struct Alignment *) calloc(alignmentOffset, sizeof(Alignment));
 	//cudaMallocHost((void**)alignments, numAlignments * sizeof(Alignment));
 }
@@ -1357,9 +1324,6 @@ void runPrintKernel(MatchContext* ctx,
 
  	char*  atimer = createTimer();
     startTimer(atimer);
-    // Copy matches to card
-    fprintf(stderr, "prepared %d matches %d alignments\n", numMatches, numAlignments);
-	fprintf(stderr, "Copying %d bytes to host memory for %d alignments\n",  numAlignments * sizeof(Alignment), numAlignments);
 
     int DEBUG = 0;
     if (DEBUG)
@@ -1388,8 +1352,6 @@ void runPrintKernel(MatchContext* ctx,
 
     dim3 dimBlock(blocksize, 1, 1);
     dim3 dimGrid(ceil(numMatches / (float)BLOCKSIZE), 1, 1);
-
-    fprintf(stderr, "  Calling print kernel... ");
 
     printKernel <<< dimGrid, dimBlock, 0 >>> (d_matches,
             numMatches,
@@ -1448,7 +1410,6 @@ void runPrintKernel(MatchContext* ctx,
 	stopTimer(atimer);
 
 	float atime = getTimerValue(atimer);
-    fprintf(stderr, "memcpy time= %f\n", atime + mtime);
 	deleteTimer(atimer);
     // Cleanup
     CUDA_SAFE_CALL(cudaFree(d_alignments));
@@ -1514,8 +1475,6 @@ void getExactAlignments(MatchContext * ctx, ReferencePage * page, bool on_cpu)
     if (!on_cpu)
 	{
 		boardMemory(&boardFreeMemory, &total_mem);
-		fprintf(stderr, "board free memory: %u total memory: %u\n",
-		boardFreeMemory, total_mem);
 	}
 	else
 	{
@@ -1528,7 +1487,6 @@ void getExactAlignments(MatchContext * ctx, ReferencePage * page, bool on_cpu)
 #endif
 
 	boardFreeMemory -= BREATHING_ROOM;
-    fprintf(stderr, "board free memory: %u\n", boardFreeMemory);
 
     int rTotalMatches = 0;
     int rTotalAlignments = 0;
@@ -1556,11 +1514,7 @@ void getExactAlignments(MatchContext * ctx, ReferencePage * page, bool on_cpu)
 
 		float btime = getTimerValue(btimer);
 		ctx->statistics.t_coords_to_buffers += btime;
-	    fprintf(stderr, "buffer prep time= %f\n", btime);
 		deleteTimer(btimer);
-
-        fprintf(stderr, "Round %d: Printing results for match coords [%d-%d) of %d using %d matches and %d alignments\n",
-                totalRounds, coord_left, next_coord, last_coord, numMatches, numAlignments);
 
 		if (numMatches == 0)
 			continue;
@@ -1594,7 +1548,6 @@ void getExactAlignments(MatchContext * ctx, ReferencePage * page, bool on_cpu)
 
 	    float ktime = getTimerValue(ktimer);
 	    ctx->statistics.t_print_kernel += ktime;
-	    fprintf(stderr, "print kernel time= %f\n", ktime);
 		deleteTimer(ktimer);
 
 		// char* stimer = createTimer();
@@ -1666,9 +1619,6 @@ void getExactAlignments(MatchContext * ctx, ReferencePage * page, bool on_cpu)
 	free(ctx->results.h_match_coords);
     ctx->results.h_coord_tex_array = NULL;
 	ctx->results.h_match_coords = NULL;
-
-    fprintf(stderr, "Finished processing %d matches and %d potential alignments in %d rounds\n",
-            rTotalMatches, rTotalAlignments, totalRounds);
 }
 
 int getQueryBlock(MatchContext* ctx, size_t device_mem_avail)
@@ -1681,8 +1631,6 @@ int getQueryBlock(MatchContext* ctx, size_t device_mem_avail)
 	unsigned int num_match_coords;
     size_t queryLen;
     char** names;
-
-    fprintf(stderr, "Loading query block... ");
 
     char* queryreadtimer = createTimer();
     startTimer(queryreadtimer);
@@ -1711,8 +1659,6 @@ int getQueryBlock(MatchContext* ctx, size_t device_mem_avail)
     queries->h_lengths_array = queryLengths;
 
 	ctx->results.numCoords = num_match_coords;
-
-    fprintf(stderr, "done.\n");
 
     return numQueries;
 }
@@ -2006,11 +1952,6 @@ void matchQueryBlockToReferencePage(MatchContext* ctx,
 {
 	char*  ktimer = createTimer();
 
-    fprintf(stderr, "Memory footprint is:\n\tqueries: %d\n\tref: %d\n\tresults: %d\n",
-            ctx->queries->bytes_on_board,
-            ctx->ref->bytes_on_board,
-            ctx->results.bytes_on_board);
-
 	startTimer(ktimer);
 	if (ctx->on_cpu)
 	{
@@ -2027,7 +1968,6 @@ void matchQueryBlockToReferencePage(MatchContext* ctx,
 
 	float ktime = getTimerValue(ktimer);
 	ctx->statistics.t_match_kernel += ktime;
-	fprintf(stderr, "match kernel time= %f\n", ktime);
 	deleteTimer(ktimer);
 
 	getMatchResults(ctx, page->id);
@@ -2040,13 +1980,6 @@ int matchSubset(MatchContext* ctx,
 {
 
     loadQueries(ctx);
-
-    fprintf(stderr,
-			"Matching queries %s - %s against ref coords %d - %d\n",
-			ctx->queries->h_names[0],
-			ctx->queries->h_names[ctx->queries->count - 1],
-			page->begin,
-			page->end);
 
     loadResultBuffer(ctx);
 
@@ -2082,8 +2015,6 @@ int getFreeDeviceMemory(bool on_cpu)
 	if (!on_cpu) {
 
         boardMemory(&free_mem, &total_mem);
-		fprintf(stderr, "board free memory: %u total memory: %u\n",
-		free_mem, total_mem);
     }
     else {
         total_mem = free_mem = 804585472; // pretend we are on a 8800 GTX
@@ -2094,8 +2025,6 @@ int getFreeDeviceMemory(bool on_cpu)
 
 int matchQueriesToReferencePage(MatchContext* ctx, ReferencePage* page)
 {
-	fprintf(stderr, "Beginning reference page %p\n", page);
-
 	int free_mem = getFreeDeviceMemory(ctx->on_cpu);
 
 	int available_mem = free_mem - page->ref.bytes_on_board - BREATHING_ROOM;
@@ -2127,8 +2056,6 @@ void initReferencePages( MatchContext* ctx , int* num_pages, ReferencePage** pag
     unsigned int page_size = BASES_PER_TREE_PAGE < bases_in_ref ?
                              BASES_PER_TREE_PAGE : bases_in_ref;
     unsigned int num_reference_pages = ceil((bases_in_ref + 0.0) / page_size);
-    fprintf(stderr, "Stream will use %d pages for %d bases, page size = %d\n",
-            num_reference_pages, bases_in_ref, page_size);
 
     unsigned int page_overlap = MAX_QUERY_LEN + 1;
     ReferencePage* pages = (ReferencePage*) calloc(num_reference_pages,
@@ -2233,7 +2160,6 @@ int matchQueries(MatchContext* ctx) {
 
     int ret;
 
-    fprintf(stderr, "Streaming reference pages against all queries\n");
     ret = streamReferenceAgainstQueries(ctx);
 
     stopTimer(ttimer);

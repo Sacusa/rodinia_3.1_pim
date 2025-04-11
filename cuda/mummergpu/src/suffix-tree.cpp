@@ -1365,9 +1365,6 @@ void buildSuffixTreeTexture(PixelOfNode** nodeTexture,
       alloc += (*width) * (*children_height) * sizeof(PixelOfChildren);
     }
 
-    fprintf(stderr, " node: %dx%d",     *width, *node_height);
-    fprintf(stderr, " children: %dx%d ", *width, *children_height);
-
     *aux_data = (AuxiliaryNodeData*)calloc(allnodes, sizeof(AuxiliaryNodeData));
 
     if (!*nodeTexture || (*children_height && !*childrenTexture) || !*aux_data)
@@ -1542,7 +1539,6 @@ void createTreeTexture(const char * refstr,
                        const char * texfilename)
 
 {
-    cerr << "  Creating Suffix Tree... ";
     EventTime_t btimer;
     char* ctimer = createTimer();
     startTimer(ctimer);
@@ -1555,11 +1551,7 @@ void createTreeTexture(const char * refstr,
 		statistics->t_tree_construction += getTimerValue(ctimer);
 	deleteTimer(ctimer);
 
-    cerr << SuffixNode::s_nodecount << " nodes "
-    << btimer.str(true, 5) << endl;
-
 #if RENUMBER_TREE
-    cerr << "  Renumbering tree... ";
     EventTime_t rtimer;
     char* reordertimer = createTimer();
     startTimer(reordertimer);
@@ -1568,11 +1560,9 @@ void createTreeTexture(const char * refstr,
     if (statistics)
         statistics->t_tree_reorder += getTimerValue(reordertimer);
     deleteTimer(reordertimer);
-    cerr << rtimer.str(true, 5) << endl;
 #endif
 
     EventTime_t ftimer;
-    cerr << "  Flattening Tree... ";
     char* flattentimer = createTimer();
     startTimer(flattentimer);
     buildSuffixTreeTexture(nodeTexture,
@@ -1587,7 +1577,6 @@ void createTreeTexture(const char * refstr,
     deleteTimer(flattentimer);
 
     *num_nodes = SuffixNode::s_nodecount + 1;
-    cerr << ftimer.str(true, 5) << endl;
 
     if (dotfilename)
     {
@@ -1612,7 +1601,6 @@ extern "C"
 void getReferenceString(const char * filename, char** refstr, size_t* reflen)
 {
   EventTime_t timer;
-  cerr << "Loading ref: " << filename << "... ";
 
   string S="s";
 
@@ -1670,8 +1658,6 @@ void getReferenceString(const char * filename, char** refstr, size_t* reflen)
   S += "$";
  *refstr = strdup(S.c_str());
   *reflen = strlen(*refstr) + 1;
-
-  cerr << *reflen-3 << " bp. " << timer.str(true, 5) << endl;
 }
 
 inline void addChar(char **buf, int * size, int * pos, char c)
@@ -2079,11 +2065,6 @@ extern "C"
     *num_match_coords = *queryTextureSize - *numQueries * (min_match_length + 1);
 #endif
 	assert (curr_mem_usage < memory_avail);
-    cerr << offsetspos << " queries ("
-    << qrylen << " bp), need "
-    << curr_mem_usage << " bytes on the GPU ("
-    << memory_avail << " avail) "
-    << timer.str(true, 5) << endl;
 }
 
 
