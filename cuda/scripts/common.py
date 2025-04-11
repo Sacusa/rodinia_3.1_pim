@@ -17,12 +17,12 @@ applications = ['b+tree', 'backprop', 'bfs', 'cfd', 'dwt2d', 'gaussian',
 
 pim_kernels = ['stream_add', 'stream_copy', 'stream_daxpy', 'stream_scale',
         'bn_fwd', 'bn_bwd', 'fully_connected', 'kmeans',
-        'histogram', 'grim']
+        'grim']
 
 base_gpu_filename = {'fully_connected': 'fc_262144', 'grim': 'grim_32',
-        'histogram': 'histogram_262144', 'kmeans': 'kmeans_262144'}
+        'kmeans': 'kmeans_262144'}
 base_pim_files = {'kmeans': 'kmeans_1', 'fully_connected': 'fc_256',
-        'histogram': 'histogram_1', 'grim': 'grim_32'}
+        'grim': 'grim_32'}
 
 policies = [
         'fifo',

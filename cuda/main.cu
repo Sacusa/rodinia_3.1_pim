@@ -397,8 +397,6 @@ void setup_pim(char *kernel)
         pim_state = init_pim(BN_BWD, 1048576, PIM_ROWS);
     } else if (!strcmp(kernel, "kmeans")) {
         pim_state = init_pim(KMEANS, 1048576, 1);
-    } else if (!strcmp(kernel, "histogram")) {
-        pim_state = init_pim(HISTOGRAM, 1048576, 1);
     } else if (!strcmp(kernel, "fully_connected")) {
         pim_state = init_pim(FULLY_CONNECTED, 1048576, 256);
     } else if (!strcmp(kernel, "grim")) {

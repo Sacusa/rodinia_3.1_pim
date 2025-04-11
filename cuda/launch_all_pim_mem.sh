@@ -7,7 +7,7 @@ if [ "$#" -lt 1 ]; then
 fi
 
 declare -a pim_apps=("stream_add" "stream_copy" "stream_daxpy" "stream_scale"
-    "bn_fwd" "bn_bwd" "fully_connected" "kmeans" "histogram" "grim")
+    "bn_fwd" "bn_bwd" "fully_connected" "kmeans" "grim")
 
 max_concurrent_apps=$((`nproc` / 2))
 num_concurrent_apps=0
